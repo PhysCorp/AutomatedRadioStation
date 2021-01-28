@@ -6,3 +6,7 @@ PhysCorp's Automated Radio Station is a new take on auto-DJ services. The statio
 
 # How does it work?
 This software is built with Python in Visual Studio Code. The program scrapes a YouTube playlist according to the weekday, using a headless version of Firefox. The program then plays the videos in a random order, taking care to not repeat videos in headless VLC instance. Between songs, the announcer occasionally talks about the weather, the current playlist info, or a PSA.
+
+# Requirements
+Advanced speech synthesis requires Real-Time-Voice-Cloning by blue-fish
+https://github.com/blue-fish/Real-Time-Voice-Cloning
