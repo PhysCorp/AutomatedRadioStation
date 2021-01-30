@@ -49,7 +49,7 @@ weatherchance = 10 # Likelihood of mentioning the weather [1/[x] chance]
 welcomechance = 10 # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = 10 # Likelihood of mentioning the weekday again [1/[x] chance]
 weatherkey = "e0fd986f9bccb2747a3e47dfae998856" # API key for Openweathermap
-overrideplaylist = "" # YouTube playlist URL
+overrideplaylist = "" # Override YouTube playlist URL
 
 # Init radio sounds (The number of available radio sounds to be played)
 DIR= os.path.join(maindirectory,"Assets/SoundEffects")
@@ -60,8 +60,9 @@ def playvoice(message):
     os.system("python3 \"" + str(maindirectory) + "/VoiceClone.py\" --no_sound --speechcontent \"" + str(re.sub("[\W ]+"," ",str(message).replace(".","_")).replace("_",". ")) + "\"")
     print(str(message)) # Display output in stdout
     # Write message contents to text file for use in OBS Studio
-    with open(str(maindirectory) + "/Output.txt","a") as fileoutput:
+    with open(str(maindirectory) + "/Output.txt","w") as fileoutput:
         fileoutput.write("\n" + str(message))
+        fileoutput.close()
     longspeechstring = "" # Clear longspeechstring var
 
 # Custom function to synthesize audio in the background [followed by speakrichtext function]
@@ -74,8 +75,9 @@ def preparevoice(message):
 # Speak text with neural synthesis engine first, but fallback to espeak TTS if the file isn't ready
 def speakrichtext(message):
     # Write message contents to text file for use in OBS Studio
-    with open(str(maindirectory) + "/Output.txt","a") as fileoutput:
+    with open(str(maindirectory) + "/Output.txt","w") as fileoutput:
         fileoutput.write("\n" + str(message))
+        fileoutput.close()
     # If the file is not ready, use fallback TTS, prepending string with "Announcer two here."
     if path.exists(str(maindirectory) + "/Output.wav") is False:
         speaktext("Announcer two here. " + str(message))
@@ -91,8 +93,9 @@ def speakrichtext(message):
 def speaktext(message):
     print(str(message)) # Print the message contents to stdout
     # Write message contents to text file for use in OBS Studio
-    with open(str(maindirectory) + "/Output.txt","a") as fileoutput:
+    with open(str(maindirectory) + "/Output.txt","w") as fileoutput:
         fileoutput.write("\n" + str(message))
+        fileoutput.close()
     engine.say(str(message))
     engine.runAndWait()
 
@@ -220,10 +223,12 @@ print("Done.")
 # Intro Text Short
 fileIntroTextShort = open(str(maindirectory) + "/SpeechScripts/IntroTextShort.txt", "r")
 speechIntroTextShort = fileIntroTextShort.readlines()
+fileIntroTextShort.close()
 
 # First Run Prompts
 fileFirstrunPrompts = open(str(maindirectory) + "/SpeechScripts/FirstrunPrompts.txt", "r")
 speechFirstrunPrompts = fileFirstrunPrompts.readlines()
+fileFirstrunPrompts.close()
 
 # Prepare the intro lines with synthesized voice
 longspeechstring = "" # Clear the longspeechstring var
