@@ -15,6 +15,7 @@ from os import path # Run external commands in Linux [3/3]
 from selenium import webdriver # Scrape websites for information [1/2]
 from selenium.webdriver import FirefoxOptions # Scrape websites for information [2/2]
 import requests, json # Gather weather info from Openweathermap
+import sys # Used to restart the script at midnight
 # from textgenrnn import textgenrnn # AI-based text generation
 
 # Setup AI text generation
@@ -38,6 +39,7 @@ longspeechstring = "" # Used to append multiple strings before synthesizing audi
 playpsa = False # Bool value for whether or not a PSA will play immediately following a song
 listPlayedSongs = [] # List stores all song numbers that have already been played
 potentialsong = 1 # The index of the song to be played
+maindirectory = os.path.dirname(__file__) # The absolute path to this file
 
 # Options
 playintro = True # Play the radio show intro upon first launch
@@ -47,34 +49,38 @@ weatherchance = 10 # Likelihood of mentioning the weather [1/[x] chance]
 welcomechance = 10 # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = 10 # Likelihood of mentioning the weekday again [1/[x] chance]
 weatherkey = "e0fd986f9bccb2747a3e47dfae998856" # API key for Openweathermap
-overrideplaylist = "" # "https://www.youtube.com/playlist?list=PL7IiPgV2w_VZn8EgvZR8ohux9A5uup91n"
+overrideplaylist = "" # YouTube playlist URL
+
+# Init radio sounds (The number of available radio sounds to be played)
+DIR= os.path.join(maindirectory,"Assets/SoundEffects")
+radiosoundcount = len([name for name in os.listdir(DIR) if os.path.isfile(os.path.join(DIR, name))])
 
 # Custom function to speak with my AI generated voice
 def playvoice(message):
-    os.system("python3 \"/home/mcurtis/PHYSCORP PROJECTS/RadioHost/Tools/Real-Time-Voice-Cloning-master/demo_cli.py\" --no_sound --speechcontent \"" + str(re.sub("[\W ]+"," ",str(message).replace(".","_")).replace("_",". ")) + "\"")
+    os.system("python3 \"" + str(maindirectory) + "/VoiceClone.py\" --no_sound --speechcontent \"" + str(re.sub("[\W ]+"," ",str(message).replace(".","_")).replace("_",". ")) + "\"")
     print(str(message)) # Display output in stdout
     # Write message contents to text file for use in OBS Studio
-    with open("/home/mcurtis/PHYSCORP PROJECTS/RadioHost/Output.txt","a") as fileoutput:
+    with open(str(maindirectory) + "/Output.txt","a") as fileoutput:
         fileoutput.write("\n" + str(message))
     longspeechstring = "" # Clear longspeechstring var
 
 # Custom function to synthesize audio in the background [followed by speakrichtext function]
 def preparevoice(message):
-    if path.exists("/home/mcurtis/PHYSCORP PROJECTS/RadioHost/Output.wav"): # If the old file exists already
-        os.system("rm \"/home/mcurtis/PHYSCORP PROJECTS/RadioHost/Output.wav" + "\"") # Delete the old file
+    if path.exists(str(maindirectory) + "/Output.wav"): # If the old file exists already
+        os.system("rm \"" + str(maindirectory) + "/Output.wav" + "\"") # Delete the old file
     # Run the neural synthesis engine asynchronously, piping all output to nohup.out
-    os.system("nohup python3 \"/home/mcurtis/PHYSCORP PROJECTS/RadioHost/Tools/Real-Time-Voice-Cloning-master/demo_cli.py\" --no_sound --speechcontent \"" + str(re.sub("[\W ]+"," ",str(message).replace(".","_")).replace("_",". ")) + "\"  &")
+    os.system("nohup python3 \"" + str(maindirectory) + "/VoiceClone.py\" --no_sound --speechcontent \"" + str(re.sub("[\W ]+"," ",str(message).replace(".","_")).replace("_",". ")) + "\"  &")
 
 # Speak text with neural synthesis engine first, but fallback to espeak TTS if the file isn't ready
 def speakrichtext(message):
     # Write message contents to text file for use in OBS Studio
-    with open("/home/mcurtis/PHYSCORP PROJECTS/RadioHost/Output.txt","a") as fileoutput:
+    with open(str(maindirectory) + "/Output.txt","a") as fileoutput:
         fileoutput.write("\n" + str(message))
     # If the file is not ready, use fallback TTS, prepending string with "Announcer two here."
-    if path.exists("/home/mcurtis/PHYSCORP PROJECTS/RadioHost/Output.wav") is False:
+    if path.exists(str(maindirectory) + "/Output.wav") is False:
         speaktext("Announcer two here. " + str(message))
     else: # If the file IS ready, play it synchronously
-        sound = mixer.Sound('/home/mcurtis/PHYSCORP PROJECTS/RadioHost/Output.wav')
+        sound = mixer.Sound(str(maindirectory) + "/Output.wav")
         sound.set_volume(1)
         channel = sound.play()
         while channel.get_busy():
@@ -85,14 +91,18 @@ def speakrichtext(message):
 def speaktext(message):
     print(str(message)) # Print the message contents to stdout
     # Write message contents to text file for use in OBS Studio
-    with open("/home/mcurtis/PHYSCORP PROJECTS/RadioHost/Output.txt","a") as fileoutput:
+    with open(str(maindirectory) + "/Output.txt","a") as fileoutput:
         fileoutput.write("\n" + str(message))
     engine.say(str(message))
     engine.runAndWait()
 
 
 # Tell user that the program is starting
-speaktext("Hello! The radio will be back online in a moment!")
+speaktext("The radio will be back online in a moment!")
+
+# State any errors/warnings to user
+if weatherkey == "":
+    print("You have not provided an Openweathermap API key. The API key is required to give weather info.")
 
 # Scrape the appropriate playlist for songs
 def vidstrip(playlist):
@@ -101,7 +111,7 @@ def vidstrip(playlist):
         playlist[i]=playlist[i][:end]
     return playlist
 
-# DO SWITCH STATEMENTS EXIST IN PYTHON???
+# DO SWITCH STATEMENTS EXIST IN PYTHON??? No.
 
 # Determine the weekday, then set the appropriate playlist
 if datetime.datetime.today().weekday() == 0: # Monday
@@ -109,32 +119,32 @@ if datetime.datetime.today().weekday() == 0: # Monday
     print("Using playlist for Monday.") # Print current weekday to stdout
     weekdaytext = "Well its Monday. Here's some rock music to get you going." # Set speech text according to weekday
 
-if datetime.datetime.today().weekday() == 1: # Tuesday
-    url = "https://www.youtube.com/playlist?list=PLHwn8cKeb1J159BvF06q5rl-pUf9xF0Lv" # Set playlist URL
+elif datetime.datetime.today().weekday() == 1: # Tuesday
+    url = "https://www.youtube.com/playlist?list=PL7IiPgV2w_VZn8EgvZR8ohux9A5uup91n" # Set playlist URL
     print("Using playlist for Tuesday.") # Print current weekday to stdout
-    weekdaytext = "Its Tuesday. Today we're serving up some electronic music." # Set speech text according to weekday
+    weekdaytext = "Its Tuesday. Today we're serving up some messed up music." # Set speech text according to weekday
 
-if datetime.datetime.today().weekday() == 2: # Wednesday
+elif datetime.datetime.today().weekday() == 2: # Wednesday
     url = "https://www.youtube.com/playlist?list=PL7IiPgV2w_VaEvjQ8YedFjlcGTbhCze9U" # Set playlist URL
     print("Using playlist for Wednesday.") # Print current weekday to stdout
     weekdaytext = "Its officially hump day. Time to throw you for a loop with some nostalgia." # Set speech text according to weekday
 
-if datetime.datetime.today().weekday() == 3: # Thursday
+elif datetime.datetime.today().weekday() == 3: # Thursday
     url = "https://www.youtube.com/playlist?list=PL4o29bINVT4EG_y-k5jGoOu3-Am8Nvi10" # Set playlist URL
     print("Using playlist for Thursday.") # Print current weekday to stdout
     weekdaytext = "Thursday. The perfect time for pop hits." # Set speech text according to weekday
 
-if datetime.datetime.today().weekday() == 4: # Friday
-    url = "https://www.youtube.com/playlist?list=PLvW_LKH-OpuvrkvqY3Yb84CusaPRzRXQg" # Set playlist URL
+elif datetime.datetime.today().weekday() == 4: # Friday
+    url = "https://www.youtube.com/playlist?list=PL7IiPgV2w_VZn8EgvZR8ohux9A5uup91n" # Set playlist URL
     print("Using playlist for Friday.") # Print current weekday to stdout
-    weekdaytext = "Friday is here. Let's listen to some throwbacks." # Set speech text according to weekday
+    weekdaytext = "Friday is here. Let's listen to some messed up music." # Set speech text according to weekday
 
-if datetime.datetime.today().weekday() == 5: # Saturday
+elif datetime.datetime.today().weekday() == 5: # Saturday
     url = "https://www.youtube.com/playlist?list=PLBD018F4938B6F632" # Set playlist URL
     print("Using playlist for Saturday.") # Print current weekday to stdout
     weekdaytext = "Todays Saturday. You know what that means. Bluegrass all day baby." # Set speech text according to weekday
 
-if datetime.datetime.today().weekday() == 6: # Sunday
+elif datetime.datetime.today().weekday() == 6: # Sunday
     url = "https://www.youtube.com/playlist?list=PLWtAfhR9YD1wdKOTDqCFYoFUcThRCfAjp" # Set playlist URL
     print("Using playlist for Sunday.") # Print current weekday to stdout
     weekdaytext = "It's Sunday. Time to chill out to some smooth jazz." # Set speech text according to weekday
@@ -208,11 +218,11 @@ print("Done.")
 # (Each line in the textfile represents a different index in the list)
 
 # Intro Text Short
-fileIntroTextShort = open("/home/mcurtis/PHYSCORP PROJECTS/RadioHost/SpeechScripts/IntroTextShort.txt", "r")
+fileIntroTextShort = open(str(maindirectory) + "/SpeechScripts/IntroTextShort.txt", "r")
 speechIntroTextShort = fileIntroTextShort.readlines()
 
 # First Run Prompts
-fileFirstrunPrompts = open("/home/mcurtis/PHYSCORP PROJECTS/RadioHost/SpeechScripts/FirstrunPrompts.txt", "r")
+fileFirstrunPrompts = open(str(maindirectory) + "/SpeechScripts/FirstrunPrompts.txt", "r")
 speechFirstrunPrompts = fileFirstrunPrompts.readlines()
 
 # Prepare the intro lines with synthesized voice
@@ -235,242 +245,258 @@ if advancedspeech == True:
 
 # Loop through songs, announcements, and other commentary forever
 while True:
-    # Set the random seed again based on current time
-    random.seed(a=None, version=2)
-    
-    # Play radio intro if enabled
-    if playintro == True:
-        # Play random radio sound before speaking
-        sound = mixer.Sound('/home/mcurtis/PHYSCORP PROJECTS/RadioHost/Assets/SoundEffects/' + str(random.randint(1,11)) + '.WAV')
-        sound.set_volume(0.5)
-        channel = sound.play()
-        while channel.get_busy():
-            pygame.time.wait(100)
+    try:
+        # Set the random seed again based on current time
+        random.seed(a=None, version=2)
         
-        # Play the synthesized voice if enabled
-        if advancedspeech == True:
-            sound = mixer.Sound("/home/mcurtis/PHYSCORP PROJECTS/RadioHost/Output.wav")
-            sound.set_volume(1)
-            channel = sound.play()
-            while channel.get_busy():
-                pygame.time.wait(100)
-        else:
+        # Play radio intro if enabled
+        if playintro == True:
+            # Play random radio sound before speaking if file exists
+            if radiosoundcount >= 1:
+                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount - 1)) + ".WAV")
+                sound.set_volume(0.5)
+                channel = sound.play()
+                while channel.get_busy():
+                    pygame.time.wait(100)
+            
+            # Play the synthesized voice if enabled
+            if advancedspeech == True:
+                sound = mixer.Sound(str(maindirectory) + "/Output.wav")
+                sound.set_volume(1)
+                channel = sound.play()
+                while channel.get_busy():
+                    pygame.time.wait(100)
+            else:
+                speaktext(longspeechstring)
+
+            # Play random radio sound after speaking if file exists
+            if radiosoundcount >= 1:
+                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount - 1)) + ".WAV")
+                sound.set_volume(0.5)
+                channel = sound.play()
+                while channel.get_busy():
+                    pygame.time.wait(100)
+
+            # Choose the first song with announcer two
+            if len(listPlayedSongs) >= len(musicplaylist) - 1: # If the music list has been exhausted
+                listPlayedSongs.clear() # Clear the list and start again
+            
+            potentialsong = random.randint(1,len(musicplaylist)-1) # Choose a random song index from the playlist
+            while potentialsong in listPlayedSongs: # If the song has been chosen already,
+                potentialsong = random.randint(1,len(musicplaylist)-1) # Randomly select a new song from the playlist
+            listPlayedSongs.append(potentialsong) # Add the song index to the list of played songs
+            songselectionint = potentialsong # Set the next song to the one that was randomly chosen
+            print("Songs played: (Includes upcoming song) " + str(listPlayedSongs)) # Show list of played song numbers
+
+            longspeechstring = "" # Clear the longspeechstring var
+            if advancedspeech: # If advanced speech is enabled,
+                longspeechstring += "Announcer two here. " # Add the text "announcer two here" to longspeechstring var
+            longspeechstring += "Up next is " + str(playlistnames[songselectionint]) + "."
+            
+            # Chance to speak "Stay safe out there!"
+            if random.randint(0,4) == 1:
+                longspeechstring += " Stay safe out there!"
+            
+            # Use espeak engine to speak the next song
             speaktext(longspeechstring)
 
-        # Play random radio sound after speaking
-        sound = mixer.Sound('/home/mcurtis/PHYSCORP PROJECTS/RadioHost/Assets/SoundEffects/' + str(random.randint(1,11)) + '.WAV')
-        sound.set_volume(0.5)
-        channel = sound.play()
-        while channel.get_busy():
-            pygame.time.wait(100)
+            # Prevent the intro from playing again
+            playintro = False
 
-        # Choose the first song with announcer two
-        if len(listPlayedSongs) >= len(musicplaylist): # If the music list has been exhausted
-            listPlayedSongs.clear() # Clear the list and start again
-        
-        potentialsong = random.randint(1,len(musicplaylist)-1) # Choose a random song index from the playlist
-        while potentialsong in listPlayedSongs: # If the song has been chosen already,
-            potentialsong = random.randint(1,len(musicplaylist)-1) # Randomly select a new song from the playlist
-        listPlayedSongs.append(potentialsong) # Add the song index to the list of played songs
-        songselectionint = potentialsong # Set the next song to the one that was randomly chosen
-        print("Songs played: (Includes upcoming song) " + str(listPlayedSongs)) # Show list of played song numbers
-
-        longspeechstring = "" # Clear the longspeechstring var
-        if advancedspeech: # If advanced speech is enabled,
-            longspeechstring += "Announcer two here. " # Add the text "announcer two here" to longspeechstring var
-        longspeechstring += "Up next is " + str(playlistnames[songselectionint]) + "."
-        
-        # Chance to speak "Stay safe out there!"
-        if random.randint(0,4) == 1:
-            longspeechstring += " Stay safe out there!"
-        
-        # Use espeak engine to speak the next song
-        speaktext(longspeechstring)
-
-        # Prevent the intro from playing again
-        playintro = False
-
-    # Download the next song with pafy
-    url = musicplaylist[songselectionint]
-    video = pafy.new(url)
-    best = video.getbest()
-    playurl = best.url
-
-    # Play the downloaded song in headless VLC
-    Instance = vlc.Instance("--vout=dummy")
-    player = Instance.media_player_new()
-    Media = Instance.media_new(playurl)
-    Media.get_mrl()
-    player.set_media(Media)
-    player.play()
-    player.audio_set_volume(80)
-
-    # Clear the longspeechstring var
-    longspeechstring = ""
-
-    # Song that just played
-    longspeechstring += "That was " + str(playlistnames[songselectionint]) + "."
-
-    # Listening to W X O U
-    longspeechstring += "\n" + str(speechIntroTextShort[random.randint(0,len(speechIntroTextShort)-1)])
-
-    # Chance to mention one of the "First Run Prompts" again
-    if random.randint(0, welcomechance) == 1:
-        # Add a random variation of the "First Run Prompts" speech to longspeechstring var
-        longspeechstring += "\nIf you just tuned in, " + str(speechFirstrunPrompts[random.randint(0,len(speechFirstrunPrompts)-1)])
-
-    # Increase the chance to speak the welcome message
-    if welcomechance > 2:
-        welcomechance -= 1
-
-    # Chance to talk about the weather [copied from online tutorial]
-    if random.randint(0,weatherchance) == 1:
-        weatherchance = 6
-        # Talk about weather using Openweathermap API
-
-        # My API key
-        api_key = weatherkey
-
-        # base_url variable to store the Openweathermap URL 
-        base_url = "http://api.openweathermap.org/data/2.5/weather?"
-
-        # Set city name
-        city_name = "Auburn Hills"
-
-        # complete_url variable to store 
-        # complete url address 
-        complete_url = base_url + "appid=" + api_key + "&q=" + city_name 
-
-        # get method of requests module 
-        # return response object 
-        response = requests.get(complete_url) 
-
-        # json method of response object 
-        # convert json format data into 
-        # python format data 
-        x = response.json() 
-
-        # Now x contains list of nested dictionaries 
-        # Check the value of "cod" key is equal to 
-        # "404", means city is found otherwise, 
-        # city is not found 
-        if x["cod"] != "404": 
-
-            # store the value of "main" 
-            # key in variable y 
-            y = x["main"] 
-
-            # store the value corresponding 
-            # to the "temp" key of y 
-            current_temperature = (y["temp"])*1.8 - 459.67
-
-            # store the value corresponding 
-            # to the "pressure" key of y 
-            current_pressure = y["pressure"] 
-
-            # store the value corresponding 
-            # to the "humidity" key of y 
-            current_humidity = y["humidity"] 
-
-            # store the value of "weather" 
-            # key in variable z 
-            z = x["weather"] 
-
-            # store the value corresponding 
-            # to the "description" key at 
-            # the 0th index of z 
-            weather_description = z[0]["description"] 
-
-            # Include weather info in longspeechstring var
-            longspeechstring += "\nLet's check up on the weather outside! Current conditions outside are " + str(weather_description) + ", and the temperature is " + str(round(current_temperature)) + "degrees."
-
-    # Increase the chance to speak the weather info
-    if weatherchance > 2:
-        weatherchance -= 1
-    
-    # Randomly choose a new song from the playlist
-    if len(listPlayedSongs) >= len(musicplaylist): # If the music list has been exhausted
-        listPlayedSongs.clear() # Clear the list and start again
-    while potentialsong in listPlayedSongs: # If the song has been chosen already,
-        potentialsong = random.randint(1,len(musicplaylist)-1) # Randomly select a new song from the playlist
-    listPlayedSongs.append(potentialsong) # Add the song index to the list of played songs
-    songselectionint = potentialsong # Set the next song to the one that was randomly chosen
-    print("Songs played: (Includes upcoming song) " + str(listPlayedSongs)) # Show list of played song numbers
-    
-    # If the playlist isn't overridden, chance to add the weekday text to longspeechstring var
-    if not overrideplaylist:
-        if random.randint(0,weekdaychance) == 1:
-            longspeechstring += " " + str(weekdaytext)
-        # Increase the chance to speak the current weekday
-        if weekdaychance > 2:
-            weekdaychance -= 1
-
-    # Add the next song info to the longspeechstring var
-    longspeechstring += "\nUp next is " + str(playlistnames[songselectionint]) + "."
-
-    # Chance to play a PSA
-    if random.randint(0,psachance) == 1:
-        playpsa = True
-        longspeechstring += "\nBut first. A message from our sponsors. Don't touch that dial."
-
-    # Chance to include "Stay safe out there!" in speech
-    if random.randint(0,4) == 1:
-        longspeechstring += "\nStay safe out there!"
-
-    # Prepare the synthesized speech if enabled
-    if advancedspeech == True:
-        preparevoice(longspeechstring)
-
-    # Wait until music finishes playing on VLC
-    time.sleep(1.5)
-    duration = player.get_length() / 1000
-    time.sleep(duration)
-    player.stop()
-
-    # Play random radio sound before speaking
-    sound = mixer.Sound('/home/mcurtis/PHYSCORP PROJECTS/RadioHost/Assets/SoundEffects/' + str(random.randint(1,11)) + '.WAV')
-    sound.set_volume(0.5)
-    channel = sound.play()
-    while channel.get_busy():
-        pygame.time.wait(100)
-    
-    # Play the synthesized speech, or use fallback espeak if not ready
-    if advancedspeech == True:
-        speakrichtext(longspeechstring)
-    else:
-        speaktext(longspeechstring)
-
-    # Play the PSA if triggered
-    if playpsa == True:
-        psachance = 6 # Reset PSA chance var
-        playpsa = False # Prevent PSA from running twice
-        
-        # Play PSA using headless VLC
-        url = psaplaylist[random.randint(1,len(psaplaylist)-1)]
+        # Download the next song with pafy
+        url = musicplaylist[songselectionint]
         video = pafy.new(url)
         best = video.getbest()
         playurl = best.url
 
+        # Play the downloaded song in headless VLC
         Instance = vlc.Instance("--vout=dummy")
         player = Instance.media_player_new()
         Media = Instance.media_new(playurl)
         Media.get_mrl()
         player.set_media(Media)
         player.play()
-        player.audio_set_volume(95)
+        player.audio_set_volume(80)
 
+        # Clear the longspeechstring var
+        longspeechstring = ""
+
+        # Song that just played
+        longspeechstring += "That was " + str(playlistnames[songselectionint]) + "."
+
+        # Listening to W X O U
+        longspeechstring += "\n" + str(speechIntroTextShort[random.randint(0,len(speechIntroTextShort)-1)])
+
+        # Chance to mention one of the "First Run Prompts" again
+        if random.randint(0, welcomechance) == 1:
+            # Add a random variation of the "First Run Prompts" speech to longspeechstring var
+            longspeechstring += "\nIf you just tuned in, " + str(speechFirstrunPrompts[random.randint(0,len(speechFirstrunPrompts)-1)])
+
+        # Increase the chance to speak the welcome message
+        if welcomechance > 2:
+            welcomechance -= 1
+
+        # Chance to talk about the weather [copied from online tutorial]
+        if random.randint(0,weatherchance) == 1 and weatherkey != "":
+            weatherchance = 6
+            # Talk about weather using Openweathermap API
+
+            # My API key
+            api_key = weatherkey
+
+            # base_url variable to store the Openweathermap URL 
+            base_url = "http://api.openweathermap.org/data/2.5/weather?"
+
+            # Set city name
+            city_name = "Auburn Hills"
+
+            # complete_url variable to store 
+            # complete url address 
+            complete_url = base_url + "appid=" + api_key + "&q=" + city_name 
+
+            # get method of requests module 
+            # return response object 
+            response = requests.get(complete_url) 
+
+            # json method of response object 
+            # convert json format data into 
+            # python format data 
+            x = response.json() 
+
+            # Now x contains list of nested dictionaries 
+            # Check the value of "cod" key is equal to 
+            # "404", means city is found otherwise, 
+            # city is not found 
+            if x["cod"] != "404": 
+
+                # store the value of "main" 
+                # key in variable y 
+                y = x["main"] 
+
+                # store the value corresponding 
+                # to the "temp" key of y 
+                current_temperature = (y["temp"])*1.8 - 459.67
+
+                # store the value corresponding 
+                # to the "pressure" key of y 
+                current_pressure = y["pressure"] 
+
+                # store the value corresponding 
+                # to the "humidity" key of y 
+                current_humidity = y["humidity"] 
+
+                # store the value of "weather" 
+                # key in variable z 
+                z = x["weather"] 
+
+                # store the value corresponding 
+                # to the "description" key at 
+                # the 0th index of z 
+                weather_description = z[0]["description"] 
+
+                # Include weather info in longspeechstring var
+                longspeechstring += "\nLet's check up on the weather outside! Current conditions outside are " + str(weather_description) + ", and the temperature is " + str(round(current_temperature)) + "degrees."
+
+        # Increase the chance to speak the weather info
+        if weatherchance > 2:
+            weatherchance -= 1
+        
+        # Randomly choose a new song from the playlist
+        if len(listPlayedSongs) >= len(musicplaylist) - 1: # If the music list has been exhausted
+            listPlayedSongs.clear() # Clear the list and start again
+        while potentialsong in listPlayedSongs: # If the song has been chosen already,
+            potentialsong = random.randint(1,len(musicplaylist)-1) # Randomly select a new song from the playlist
+        listPlayedSongs.append(potentialsong) # Add the song index to the list of played songs
+        songselectionint = potentialsong # Set the next song to the one that was randomly chosen
+        print("Songs played: (Includes upcoming song) " + str(listPlayedSongs)) # Show list of played song numbers
+        
+        # If the playlist isn't overridden, chance to add the weekday text to longspeechstring var
+        if not overrideplaylist:
+            if random.randint(0,weekdaychance) == 1:
+                longspeechstring += " " + str(weekdaytext)
+            # Increase the chance to speak the current weekday
+            if weekdaychance > 2:
+                weekdaychance -= 1
+
+        # Add the next song info to the longspeechstring var
+        longspeechstring += "\nUp next is " + str(playlistnames[songselectionint]) + "."
+
+        # Chance to play a PSA
+        if random.randint(0,psachance) == 1:
+            playpsa = True
+            longspeechstring += "\nBut first. A message from our sponsors. Don't touch that dial."
+
+        # Chance to include "Stay safe out there!" in speech
+        if random.randint(0,4) == 1:
+            longspeechstring += "\nStay safe out there!"
+
+        # Prepare the synthesized speech if enabled
+        if advancedspeech == True:
+            preparevoice(longspeechstring)
+
+        # Wait until music finishes playing on VLC
         time.sleep(1.5)
         duration = player.get_length() / 1000
         time.sleep(duration)
         player.stop()
-    
-    # Increase chance to play PSA next time
-    if psachance > 2:
-        psachance -= 1
+        player.release()
 
-    # Play random radio sound after speaking
-    sound = mixer.Sound('/home/mcurtis/PHYSCORP PROJECTS/RadioHost/Assets/SoundEffects/' + str(random.randint(1,11)) + '.WAV')
-    sound.set_volume(0.5)
-    channel = sound.play()
-    while channel.get_busy():
-        pygame.time.wait(100)
+        # Play random radio sound before speaking if file exists
+        if radiosoundcount >= 1:
+            sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount - 1)) + ".WAV")
+            sound.set_volume(0.5)
+            channel = sound.play()
+            while channel.get_busy():
+                pygame.time.wait(100)
+        
+        # If the time is midnight, restart the script to gather new playlist info
+        if str(time.strftime("%H:%M",time.localtime())) == "00:00":
+            speaktext("It's midnight. I'm switching to a new playlist. Please wait.")
+            os.execv(__file__, sys.argv)
+
+        # Play the synthesized speech, or use fallback espeak if not ready
+        if advancedspeech == True:
+            speakrichtext(longspeechstring)
+        else:
+            speaktext(longspeechstring)
+
+        # Play the PSA if triggered
+        if playpsa == True:
+            psachance = 6 # Reset PSA chance var
+            playpsa = False # Prevent PSA from running twice
+            
+            # Play PSA using headless VLC
+            url = psaplaylist[random.randint(1,len(psaplaylist)-1)]
+            video = pafy.new(url)
+            best = video.getbest()
+            playurl = best.url
+
+            Instance = vlc.Instance("--vout=dummy")
+            player = Instance.media_player_new()
+            Media = Instance.media_new(playurl)
+            Media.get_mrl()
+            player.set_media(Media)
+            player.play()
+            player.audio_set_volume(95)
+
+            time.sleep(1.5)
+            duration = player.get_length() / 1000
+            time.sleep(duration)
+            player.stop()
+            player.release()
+        
+        # Increase chance to play PSA next time
+        if psachance > 2:
+            psachance -= 1
+
+        # Play random radio sound after speaking if file exists
+        if radiosoundcount >= 1:
+            sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount - 1)) + ".WAV")
+            sound.set_volume(0.5)
+            channel = sound.play()
+            while channel.get_busy():
+                pygame.time.wait(100)
+    except (RuntimeError, TypeError, NameError, OSError):
+        # Say that something has gone wrong
+        speaktext("It looks like something has gone wrong. Please wait while I restart the station.")
+        os.execv(__file__, sys.argv)
