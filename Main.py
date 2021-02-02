@@ -16,6 +16,7 @@ from selenium import webdriver # Scrape websites for information [1/2]
 from selenium.webdriver import FirefoxOptions # Scrape websites for information [2/2]
 import requests, json # Gather weather info from Openweathermap
 import sys # Used to restart the script at midnight
+import platform # Identify which OS the script is running on
 # from textgenrnn import textgenrnn # AI-based text generation
 
 # Setup AI text generation
@@ -57,7 +58,7 @@ radiosoundcount = len([name for name in os.listdir(DIR) if os.path.isfile(os.pat
 
 # Custom function to speak with my AI generated voice
 def playvoice(message):
-    os.system("python3 \"" + str(maindirectory) + "/VoiceClone.py\" --no_sound --speechcontent \"" + str(re.sub("[\W ]+"," ",str(message).replace(".","_")).replace("_",". ")) + "\"")
+    os.system("python3 \"" + str(maindirectory) + "/Real-Time-Voice-Cloning-master/demo_cli.py\" --no_sound --speechcontent \"" + str(re.sub("[\W ]+"," ",str(message).replace(".","_")).replace("_",". ")) + "\"")
     print(str(message)) # Display output in stdout
     # Write message contents to text file for use in OBS Studio
     with open(str(maindirectory) + "/Output.txt","w") as fileoutput:
@@ -68,9 +69,12 @@ def playvoice(message):
 # Custom function to synthesize audio in the background [followed by speakrichtext function]
 def preparevoice(message):
     if path.exists(str(maindirectory) + "/Output.wav"): # If the old file exists already
-        os.system("rm \"" + str(maindirectory) + "/Output.wav" + "\"") # Delete the old file
+        if str(platform.system()) == "Darwin" or str(platform.system()) == "Linux":
+            os.system("rm \"" + str(maindirectory) + "/Output.wav" + "\"") # Delete the old file [Linux and Mac OS]
+        else:
+            os.system("del \"" + str(maindirectory) + "/Output.wav" + "\"") # Delete the old file [Windows]
     # Run the neural synthesis engine asynchronously, piping all output to nohup.out
-    os.system("nohup python3 \"" + str(maindirectory) + "/VoiceClone.py\" --no_sound --speechcontent \"" + str(re.sub("[\W ]+"," ",str(message).replace(".","_")).replace("_",". ")) + "\"  &")
+    os.system("nohup python3 \"" + str(maindirectory) + "/Real-Time-Voice-Cloning-master/demo_cli.py\" --no_sound --speechcontent \"" + str(re.sub("[\W ]+"," ",str(message).replace(".","_")).replace("_",". ")) + "\"  &")
 
 # Speak text with neural synthesis engine first, but fallback to espeak TTS if the file isn't ready
 def speakrichtext(message):
@@ -121,36 +125,43 @@ if datetime.datetime.today().weekday() == 0: # Monday
     url = "https://www.youtube.com/playlist?list=PLNxOe-buLm6cz8UQ-hyG1nm3RTNBUBv3K" # Set playlist URL
     print("Using playlist for Monday.") # Print current weekday to stdout
     weekdaytext = "Well its Monday. Here's some rock music to get you going." # Set speech text according to weekday
+    savedweekday = datetime.datetime.today().weekday()
 
 elif datetime.datetime.today().weekday() == 1: # Tuesday
     url = "https://www.youtube.com/playlist?list=PL7IiPgV2w_VZn8EgvZR8ohux9A5uup91n" # Set playlist URL
     print("Using playlist for Tuesday.") # Print current weekday to stdout
     weekdaytext = "Its Tuesday. Today we're serving up some messed up music." # Set speech text according to weekday
+    savedweekday = datetime.datetime.today().weekday()
 
 elif datetime.datetime.today().weekday() == 2: # Wednesday
     url = "https://www.youtube.com/playlist?list=PL7IiPgV2w_VaEvjQ8YedFjlcGTbhCze9U" # Set playlist URL
     print("Using playlist for Wednesday.") # Print current weekday to stdout
     weekdaytext = "Its officially hump day. Time to throw you for a loop with some nostalgia." # Set speech text according to weekday
+    savedweekday = datetime.datetime.today().weekday()
 
 elif datetime.datetime.today().weekday() == 3: # Thursday
     url = "https://www.youtube.com/playlist?list=PL4o29bINVT4EG_y-k5jGoOu3-Am8Nvi10" # Set playlist URL
     print("Using playlist for Thursday.") # Print current weekday to stdout
     weekdaytext = "Thursday. The perfect time for pop hits." # Set speech text according to weekday
+    savedweekday = datetime.datetime.today().weekday()
 
 elif datetime.datetime.today().weekday() == 4: # Friday
     url = "https://www.youtube.com/playlist?list=PL7IiPgV2w_VZn8EgvZR8ohux9A5uup91n" # Set playlist URL
     print("Using playlist for Friday.") # Print current weekday to stdout
     weekdaytext = "Friday is here. Let's listen to some messed up music." # Set speech text according to weekday
+    savedweekday = datetime.datetime.today().weekday()
 
 elif datetime.datetime.today().weekday() == 5: # Saturday
-    url = "https://www.youtube.com/playlist?list=PLBD018F4938B6F632" # Set playlist URL
+    url = "https://www.youtube.com/playlist?list=PLGBuKfnErZlAkaUUy57-mR97f8SBgMNHh" # Set playlist URL
     print("Using playlist for Saturday.") # Print current weekday to stdout
-    weekdaytext = "Todays Saturday. You know what that means. Bluegrass all day baby." # Set speech text according to weekday
+    weekdaytext = "Todays Saturday. You know what that means. Seventies hits all day baby." # Set speech text according to weekday
+    savedweekday = datetime.datetime.today().weekday()
 
 elif datetime.datetime.today().weekday() == 6: # Sunday
     url = "https://www.youtube.com/playlist?list=PLWtAfhR9YD1wdKOTDqCFYoFUcThRCfAjp" # Set playlist URL
     print("Using playlist for Sunday.") # Print current weekday to stdout
-    weekdaytext = "It's Sunday. Time to chill out to some smooth jazz." # Set speech text according to weekday
+    weekdaytext = "Its Sunday. Time to chill out to some smooth jazz." # Set speech text according to weekday
+    savedweekday = datetime.datetime.today().weekday()
 
 # If specified, override the weekday playlist with something else
 if overrideplaylist:
@@ -400,7 +411,7 @@ while True:
                 weather_description = z[0]["description"] 
 
                 # Include weather info in longspeechstring var
-                longspeechstring += "\nLet's check up on the weather outside! Current conditions outside are " + str(weather_description) + ", and the temperature is " + str(round(current_temperature)) + "degrees."
+                longspeechstring += "\nLet's check up on the weather outside! Current conditions outside are " + str(weather_description) + ", and the temperature is " + str(round(current_temperature)) + " degrees."
 
         # Increase the chance to speak the weather info
         if weatherchance > 2:
@@ -455,9 +466,9 @@ while True:
                 pygame.time.wait(100)
         
         # If the time is midnight, restart the script to gather new playlist info
-        if str(time.strftime("%H:%M",time.localtime())) == "00:00":
+        if savedweekday != datetime.datetime.today().weekday():
             speaktext("It's midnight. I'm switching to a new playlist. Please wait.")
-            os.execv(__file__, sys.argv)
+            os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script
 
         # Play the synthesized speech, or use fallback espeak if not ready
         if advancedspeech == True:
@@ -504,4 +515,4 @@ while True:
     except (RuntimeError, TypeError, NameError, OSError):
         # Say that something has gone wrong
         speaktext("It looks like something has gone wrong. Please wait while I restart the station.")
-        os.execv(__file__, sys.argv)
+        os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script
