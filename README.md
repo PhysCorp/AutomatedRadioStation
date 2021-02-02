@@ -28,9 +28,9 @@ Prereq: Clone the repo. Terminal: "git clone https://github.com/PhysCorp/Automat
 3) Configure any speech scripts/playlists (See "Configuration Tab Below").
 4. Run the program! Terminal: "python3 Main.py"
 
-# Configuration
+# Configuration:
 + Sound Effects are stored in Assets/SoundEffects. Place any .WAV files in that directory, then rename the file to a number (Example: "1.WAV"). The radio will play a random sound effect before the announcer speaks.
-+ Radio scripts are stored in the "Speech Scripts" folder. IntroTextShort.txt accounts for all the brief welcome messages. FirstrunPrompts.txt holds all of the lengthy introductions to the radio segment.
++ Radio scripts are stored in the "Speech Scripts" folder. "IntroTextShort.txt" accounts for all the brief welcome messages. "FirstrunPrompts.txt" holds all of the lengthy introductions to the radio segment.
 *Add more lines to either file to increase variety.
 
 # Known Issue(s):
