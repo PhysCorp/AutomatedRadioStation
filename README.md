@@ -22,7 +22,7 @@ This should be used on a Debian-based Linux distro!
 
 Prereq: Clone the repo. Terminal: "git clone https://github.com/PhysCorp/AutomatedRadioStation.git"
 
-1) Make sure Python 3.8.5+ is installed! Terminal: "sudo apt install python3"
+1) Make sure Python 3.8.5+ is installed! Terminal: "sudo apt install python3 python3-pip"
 2) Change to project directory, then use PIP to install required files. Terminal: "cd AutomatedRadioStation && pip3 install -r requirements.txt"
 *Optionally, use PIP to install required files for voice synthesis. Terminal: "pip3 install -r requirements_voice.txt"
 3) Configure any speech scripts/playlists (See "Configuration Tab Below").
