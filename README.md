@@ -1,3 +1,4 @@
+<img src="https://github.com/PhysCorp/AutomatedRadioStation/blob/main/Icon.png" width="128" height="128">
 # AutomatedRadioStation
 A Radio Host that's Entirely AI-Generated!
 
@@ -13,3 +14,5 @@ firefox, espeak, python3-venv, firefox-geckodriver
 
 Advanced speech synthesis requires Real-Time-Voice-Cloning by blue-fish
 https://github.com/blue-fish/Real-Time-Voice-Cloning
+
+<img src="https://github.com/PhysCorp/AutomatedRadioStation/blob/main/frame.png" width="128" height="128">
