@@ -4,3 +4,4 @@ python-vlc
 pygame
 selenium
 requests
+youtube-dl
