@@ -1,7 +1,7 @@
 <img src="https://github.com/PhysCorp/AutomatedRadioStation/blob/main/Icon.png" width="128" height="128">
 
 # AutomatedRadioStation
-A Radio Host that's Entirely AI-Generated!
+A Radio Host that's Entirely AI-Produced!
 
 # What is it?
 PhysCorp's Automated Radio Station is a new take on auto-DJ services. The station is run entirely by computers. Unlike traditional radio stations that use an auto-DJ, this station serves to include commentary between songs like a live announcer!
@@ -19,7 +19,7 @@ https://github.com/blue-fish/Real-Time-Voice-Cloning
 # Install Instructions:
 This should be used on a Debian-based Linux distro!
 
-Prereq) Clone the repo. Terminal: "git clone https://github.com/PhysCorp/AutomatedRadioStation.git"
+Prereq: Clone the repo. Terminal: "git clone https://github.com/PhysCorp/AutomatedRadioStation.git"
 
 1) Make sure Python 3.8.5+ is installed! Terminal: "sudo apt install python3"
 2) Change to project directory, then use PIP to install required files. Terminal: "cd AutomatedRadioStation && pip3 install -r requirements.txt"
