@@ -49,7 +49,7 @@ psachance = 10 # Likelihood of playing a PSA [1/[x] chance]
 weatherchance = 10 # Likelihood of mentioning the weather [1/[x] chance]
 welcomechance = 10 # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = 10 # Likelihood of mentioning the weekday again [1/[x] chance]
-weatherkey = "e0fd986f9bccb2747a3e47dfae998856" # API key for Openweathermap
+weatherkey = "" # API key for Openweathermap
 overrideplaylist = "" # Override YouTube playlist URL
 
 # Init radio sounds (The number of available radio sounds to be played)
