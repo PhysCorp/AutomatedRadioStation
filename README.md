@@ -33,6 +33,6 @@ Prereq: Clone the repo. Terminal: "git clone https://github.com/PhysCorp/Automat
 *Add more lines to either file to increase variety.
 
 # Known Issue(s):
-- Issue removing VLC instances from memory, causing ALSA to crash after [X] songs are played (Working on a fix)
+- None ATM!
 
 <img src="https://github.com/PhysCorp/AutomatedRadioStation/blob/main/frame.png" width="128" height="128">
