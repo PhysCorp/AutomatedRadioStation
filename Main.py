@@ -59,6 +59,7 @@ psachance = defaultpsachance # Likelihood of playing a PSA [1/[x] chance]
 weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[x] chance]
 welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
+versioninfo = "21.2.0" # Script version number [YEAR.MONTH.BUILDNUM]
 
 # Init radio sounds (The number of available radio sounds to be played)
 DIR= os.path.join(maindirectory,"Assets/SoundEffects")
@@ -279,8 +280,9 @@ longspeechstring = "" # Clear the longspeechstring var
 if not overrideplaylist:
     longspeechstring += str(weekdaytext)
 
-# Add a random variation of the "Intro Text Short" speech to longspeechstring var
+# Add a random variation of the "Intro Text Short" speech to longspeechstring var & the version number
 longspeechstring += "\n" + str(speechIntroTextShort[random.randint(0,len(speechIntroTextShort)-1)])
+longspeechstring += " Version " + str(versioninfo) + "."
 
 # Add a random variation of the "First Run Prompts" speech to longspeechstring var
 longspeechstring += "\n" + str(speechFirstrunPrompts[random.randint(0,len(speechFirstrunPrompts)-1)])
@@ -380,8 +382,9 @@ while True:
         # Song that just played
         longspeechstring += str(speechSongEndTransitions[random.randint(0,len(speechSongEndTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
 
-        # Listening to W X O U
+        # Listening to PhysCorp's Automated Station & Version Info
         longspeechstring += "\n" + str(speechIntroTextShort[random.randint(0,len(speechIntroTextShort)-1)])
+        longspeechstring += " Version " + str(versioninfo) + "."
 
         # Chance to mention one of the "First Run Prompts" again
         if random.randint(0, welcomechance) == 1:
