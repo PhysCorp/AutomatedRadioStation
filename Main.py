@@ -40,17 +40,18 @@ longspeechstring = "" # Used to append multiple strings before synthesizing audi
 playpsa = False # Bool value for whether or not a PSA will play immediately following a song
 listPlayedSongs = [] # List stores all song numbers that have already been played
 potentialsong = 1 # The index of the song to be played
-maindirectory = os.path.dirname(__file__) # The absolute path to this file
+maindirectory = os.path.dirname(os.path.abspath(__file__)) # The absolute path to this file
 
 # Options
 playintro = True # Play the radio show intro upon first launch
 advancedspeech = False # Use AI-based speech generation service
 psachance = 10 # Likelihood of playing a PSA [1/[x] chance]
-weatherchance = 10 # Likelihood of mentioning the weather [1/[x] chance]
-welcomechance = 10 # Likelihood of mentioning the welcome message again [1/[x] chance]
-weekdaychance = 10 # Likelihood of mentioning the weekday again [1/[x] chance]
+weatherchance = 25 # Likelihood of mentioning the weather [1/[x] chance]
+welcomechance = 25 # Likelihood of mentioning the welcome message again [1/[x] chance]
+weekdaychance = 25 # Likelihood of mentioning the weekday again [1/[x] chance]
 weatherkey = "" # API key for Openweathermap
 overrideplaylist = "" # Override YouTube playlist URL
+writeoutput = False # Whether or not to print the speech text to Output.txt
 
 # Init radio sounds (The number of available radio sounds to be played)
 DIR= os.path.join(maindirectory,"Assets/SoundEffects")
@@ -61,9 +62,10 @@ def playvoice(message):
     os.system("python3 \"" + str(maindirectory) + "/Real-Time-Voice-Cloning-master/demo_cli.py\" --no_sound --speechcontent \"" + str(re.sub("[\W ]+"," ",str(message).replace(".","_")).replace("_",". ")) + "\"")
     print(str(message)) # Display output in stdout
     # Write message contents to text file for use in OBS Studio
-    with open(str(maindirectory) + "/Output.txt","w") as fileoutput:
-        fileoutput.write("\n" + str(message))
-        fileoutput.close()
+    if writeoutput == True:
+        with open(str(maindirectory) + "/Output.txt","w") as fileoutput:
+            fileoutput.write("\n" + str(message))
+            fileoutput.close()
     longspeechstring = "" # Clear longspeechstring var
 
 # Custom function to synthesize audio in the background [followed by speakrichtext function]
@@ -79,9 +81,10 @@ def preparevoice(message):
 # Speak text with neural synthesis engine first, but fallback to espeak TTS if the file isn't ready
 def speakrichtext(message):
     # Write message contents to text file for use in OBS Studio
-    with open(str(maindirectory) + "/Output.txt","w") as fileoutput:
-        fileoutput.write("\n" + str(message))
-        fileoutput.close()
+    if writeoutput == True:
+        with open(str(maindirectory) + "/Output.txt","w") as fileoutput:
+            fileoutput.write("\n" + str(message))
+            fileoutput.close()
     # If the file is not ready, use fallback TTS, prepending string with "Announcer two here."
     if path.exists(str(maindirectory) + "/Output.wav") is False:
         speaktext("Announcer two here. " + str(message))
@@ -97,9 +100,10 @@ def speakrichtext(message):
 def speaktext(message):
     print(str(message)) # Print the message contents to stdout
     # Write message contents to text file for use in OBS Studio
-    with open(str(maindirectory) + "/Output.txt","w") as fileoutput:
-        fileoutput.write("\n" + str(message))
-        fileoutput.close()
+    if writeoutput == True:
+        with open(str(maindirectory) + "/Output.txt","w") as fileoutput:
+            fileoutput.write("\n" + str(message))
+            fileoutput.close()
     engine.say(str(message))
     engine.runAndWait()
 
@@ -134,7 +138,7 @@ elif datetime.datetime.today().weekday() == 1: # Tuesday
     savedweekday = datetime.datetime.today().weekday()
 
 elif datetime.datetime.today().weekday() == 2: # Wednesday
-    url = "https://www.youtube.com/playlist?list=PL7IiPgV2w_VaEvjQ8YedFjlcGTbhCze9U" # Set playlist URL
+    url = "https://www.youtube.com/playlist?list=PLHL1i3oc4p0o76QOZ_BLZwjDb1x21azmC" # Set playlist URL
     print("Using playlist for Wednesday.") # Print current weekday to stdout
     weekdaytext = "Its officially hump day. Time to throw you for a loop with some nostalgia." # Set speech text according to weekday
     savedweekday = datetime.datetime.today().weekday()
@@ -146,9 +150,9 @@ elif datetime.datetime.today().weekday() == 3: # Thursday
     savedweekday = datetime.datetime.today().weekday()
 
 elif datetime.datetime.today().weekday() == 4: # Friday
-    url = "https://www.youtube.com/playlist?list=PL7IiPgV2w_VZn8EgvZR8ohux9A5uup91n" # Set playlist URL
+    url = "https://www.youtube.com/playlist?list=PLCD0445C57F2B7F41" # Set playlist URL
     print("Using playlist for Friday.") # Print current weekday to stdout
-    weekdaytext = "Friday is here. Let's listen to some messed up music." # Set speech text according to weekday
+    weekdaytext = "Friday is here. Let's listen to the best of the eighties." # Set speech text according to weekday
     savedweekday = datetime.datetime.today().weekday()
 
 elif datetime.datetime.today().weekday() == 5: # Saturday
@@ -241,6 +245,11 @@ fileFirstrunPrompts = open(str(maindirectory) + "/SpeechScripts/FirstrunPrompts.
 speechFirstrunPrompts = fileFirstrunPrompts.readlines()
 fileFirstrunPrompts.close()
 
+# Song Transitions
+fileSongTransitions = open(str(maindirectory) + "/SpeechScripts/SongTransitions.txt", "r")
+speechSongTransitions = fileSongTransitions.readlines()
+fileSongTransitions.close()
+
 # Prepare the intro lines with synthesized voice
 longspeechstring = "" # Clear the longspeechstring var
 
@@ -269,7 +278,7 @@ while True:
         if playintro == True:
             # Play random radio sound before speaking if file exists
             if radiosoundcount >= 1:
-                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount - 1)) + ".WAV")
+                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount)) + ".WAV")
                 sound.set_volume(0.5)
                 channel = sound.play()
                 while channel.get_busy():
@@ -287,7 +296,7 @@ while True:
 
             # Play random radio sound after speaking if file exists
             if radiosoundcount >= 1:
-                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount - 1)) + ".WAV")
+                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount)) + ".WAV")
                 sound.set_volume(0.5)
                 channel = sound.play()
                 while channel.get_busy():
@@ -307,8 +316,8 @@ while True:
             longspeechstring = "" # Clear the longspeechstring var
             if advancedspeech: # If advanced speech is enabled,
                 longspeechstring += "Announcer two here. " # Add the text "announcer two here" to longspeechstring var
-            longspeechstring += "Up next is " + str(playlistnames[songselectionint]) + "."
-            
+            longspeechstring += "\n" + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
+
             # Chance to speak "Stay safe out there!"
             if random.randint(0,4) == 1:
                 longspeechstring += " Stay safe out there!"
@@ -435,7 +444,7 @@ while True:
                 weekdaychance -= 1
 
         # Add the next song info to the longspeechstring var
-        longspeechstring += "\nUp next is " + str(playlistnames[songselectionint]) + "."
+        longspeechstring += "\n" + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
 
         # Chance to play a PSA
         if random.randint(0,psachance) == 1:
@@ -461,7 +470,7 @@ while True:
 
         # Play random radio sound before speaking if file exists
         if radiosoundcount >= 1:
-            sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount - 1)) + ".WAV")
+            sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount)) + ".WAV")
             sound.set_volume(0.5)
             channel = sound.play()
             while channel.get_busy():
@@ -511,7 +520,7 @@ while True:
 
         # Play random radio sound after speaking if file exists
         if radiosoundcount >= 1:
-            sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount - 1)) + ".WAV")
+            sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount)) + ".WAV")
             sound.set_volume(0.5)
             channel = sound.play()
             while channel.get_busy():
