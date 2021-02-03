@@ -35,23 +35,30 @@ random.seed(a=None, version=2) # Set random seed based on current time
 mixer = pygame.mixer
 mixer.init()
 
+# Options
+playintro = True # Play the radio show intro upon first launch
+advancedspeech = False # Use AI-based speech generation service
+defaultpsachance = 10 # Likelihood of playing a PSA [1/[x] chance]
+defaultweatherchance = 10 # Likelihood of mentioning the weather [1/[x] chance]
+defaultwelcomechance = 10 # Likelihood of mentioning the welcome message again [1/[x] chance]
+defaultweekdaychance = 10 # Likelihood of mentioning the weekday again [1/[x] chance]
+weatherkey = "" # API key for Openweathermap
+city_name = "Auburn Hills" # Name of city for weather info
+overrideplaylist = "" # Override YouTube playlist URL for music
+writeoutput = False # Whether or not to print the speech text to Output.txt
+writesonginfo = False # Whether or not to print the song title to SongInfo.txt
+psaplaylisturl = "https://www.youtube.com/playlist?list=PLUJZiQIClkwdxdCVag0ffmjPNdnHDlb02" # YouTube playlist URL for PSAs
+
 # Declare Variables
 longspeechstring = "" # Used to append multiple strings before synthesizing audio
 playpsa = False # Bool value for whether or not a PSA will play immediately following a song
 listPlayedSongs = [] # List stores all song numbers that have already been played
 potentialsong = 1 # The index of the song to be played
 maindirectory = os.path.dirname(os.path.abspath(__file__)) # The absolute path to this file
-
-# Options
-playintro = True # Play the radio show intro upon first launch
-advancedspeech = False # Use AI-based speech generation service
-psachance = 10 # Likelihood of playing a PSA [1/[x] chance]
-weatherchance = 25 # Likelihood of mentioning the weather [1/[x] chance]
-welcomechance = 25 # Likelihood of mentioning the welcome message again [1/[x] chance]
-weekdaychance = 25 # Likelihood of mentioning the weekday again [1/[x] chance]
-weatherkey = "" # API key for Openweathermap
-overrideplaylist = "" # Override YouTube playlist URL
-writeoutput = False # Whether or not to print the speech text to Output.txt
+psachance = defaultpsachance # Likelihood of playing a PSA [1/[x] chance]
+weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[x] chance]
+welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
+weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
 
 # Init radio sounds (The number of available radio sounds to be played)
 DIR= os.path.join(maindirectory,"Assets/SoundEffects")
@@ -124,6 +131,8 @@ def vidstrip(playlist):
 
 # DO SWITCH STATEMENTS EXIST IN PYTHON??? No.
 
+url = ""
+
 # Determine the weekday, then set the appropriate playlist
 if datetime.datetime.today().weekday() == 0: # Monday
     url = "https://www.youtube.com/playlist?list=PLNxOe-buLm6cz8UQ-hyG1nm3RTNBUBv3K" # Set playlist URL
@@ -167,6 +176,11 @@ elif datetime.datetime.today().weekday() == 6: # Sunday
     weekdaytext = "Its Sunday. Time to chill out to some smooth jazz." # Set speech text according to weekday
     savedweekday = datetime.datetime.today().weekday()
 
+# If the playlist URL is blank, warn the user and use a fallback playlist
+if url == "":
+    url = "https://www.youtube.com/playlist?list=PLHL1i3oc4p0o76QOZ_BLZwjDb1x21azmC"
+    print("You didn't specify a music playlist for today's date! Using fallback playlist.")
+
 # If specified, override the weekday playlist with something else
 if overrideplaylist:
     url = overrideplaylist
@@ -208,26 +222,29 @@ def vidstrip(playlist):
         playlist[i]=playlist[i][:end]
     return playlist
 
-# Set URL for PSAs
-url = "https://www.youtube.com/playlist?list=PL7IiPgV2w_VZg0cfEt4uOBqSpPevxmV3C"
+if psaplaylisturl != "":
+    # Set URL for PSAs
+    url = psaplaylisturl
 
-# Print steps to stdout
-print("Scraping PSA playlist ...")
+    # Print steps to stdout
+    print("Scraping PSA playlist ...")
 
-# Run Firefox in automated headless mode
-opts = FirefoxOptions()
-opts.add_argument("--headless")
-driver = webdriver.Firefox(options=opts)
-driver.get(url) # Open URL
-playlist=[] # Clear playlist
+    # Run Firefox in automated headless mode
+    opts = FirefoxOptions()
+    opts.add_argument("--headless")
+    driver = webdriver.Firefox(options=opts)
+    driver.get(url) # Open URL
+    playlist=[] # Clear playlist
 
-videos=driver.find_elements_by_class_name('style-scope ytd-playlist-video-renderer')
-for video in videos:
-    link2=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("href")
-    playlist.append(link2) # Append each URL to the list
+    videos=driver.find_elements_by_class_name('style-scope ytd-playlist-video-renderer')
+    for video in videos:
+        link2=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("href")
+        playlist.append(link2) # Append each URL to the list
 
-psaplaylist=vidstrip(playlist)
-driver.close() # Close the web rendering engine
+    psaplaylist=vidstrip(playlist)
+    driver.close() # Close the web rendering engine
+else:
+    print("PSA playlist URL has not been set. The station will not play PSAs.")
 
 # Print steps to stdout
 print("Done.")
@@ -249,6 +266,11 @@ fileFirstrunPrompts.close()
 fileSongTransitions = open(str(maindirectory) + "/SpeechScripts/SongTransitions.txt", "r")
 speechSongTransitions = fileSongTransitions.readlines()
 fileSongTransitions.close()
+
+# Song END Transitions
+fileSongEndTransitions = open(str(maindirectory) + "/SpeechScripts/SongEndTransitions.txt", "r")
+speechSongEndTransitions = fileSongEndTransitions.readlines()
+fileSongEndTransitions.close()
 
 # Prepare the intro lines with synthesized voice
 longspeechstring = "" # Clear the longspeechstring var
@@ -312,12 +334,14 @@ while True:
             listPlayedSongs.append(potentialsong) # Add the song index to the list of played songs
             songselectionint = potentialsong # Set the next song to the one that was randomly chosen
             print("Songs played: (Includes upcoming song) " + str(listPlayedSongs)) # Show list of played song numbers
+            print("Likelihood VARs:\nPSA: " + str(psachance) + "\nWeather: " + str(weatherchance) + "\nWelcomeMessage: " + str(welcomechance) + "\nWeekdayMessage: " + str(weekdaychance)) # Show chance VARs
 
             longspeechstring = "" # Clear the longspeechstring var
             if advancedspeech: # If advanced speech is enabled,
                 longspeechstring += "Announcer two here. " # Add the text "announcer two here" to longspeechstring var
-            longspeechstring += "\n" + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
-
+            longspeechstring += "\n" + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(re.sub("[\W ]+"," ",str(playlistnames[songselectionint]).replace(".","_")).replace("_",". ")) + "."
+            # longspeechstring += "\n" + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
+            
             # Chance to speak "Stay safe out there!"
             if random.randint(0,4) == 1:
                 longspeechstring += " Stay safe out there!"
@@ -327,6 +351,13 @@ while True:
 
             # Prevent the intro from playing again
             playintro = False
+
+
+        # If writesonginfo is enabled, write the song title to SongInfo.txt
+        # if writesonginfo == True:
+        #     with open(str(maindirectory) + "/SongInfo.txt","w") as fileoutput2:
+        #         fileoutput2.write(str(playlistnames[songselectionint])
+        #         fileoutput2.close()
 
         # Download the next song with pafy
         url = musicplaylist[songselectionint]
@@ -347,7 +378,7 @@ while True:
         longspeechstring = ""
 
         # Song that just played
-        longspeechstring += "That was " + str(playlistnames[songselectionint]) + "."
+        longspeechstring += str(speechSongEndTransitions[random.randint(0,len(speechSongEndTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
 
         # Listening to W X O U
         longspeechstring += "\n" + str(speechIntroTextShort[random.randint(0,len(speechIntroTextShort)-1)])
@@ -356,6 +387,8 @@ while True:
         if random.randint(0, welcomechance) == 1:
             # Add a random variation of the "First Run Prompts" speech to longspeechstring var
             longspeechstring += "\nIf you just tuned in, " + str(speechFirstrunPrompts[random.randint(0,len(speechFirstrunPrompts)-1)])
+            # Reset welcomechance var
+            welcomechance = defaultwelcomechance
 
         # Increase the chance to speak the welcome message
         if welcomechance > 2:
@@ -363,7 +396,9 @@ while True:
 
         # Chance to talk about the weather [copied from online tutorial]
         if random.randint(0,weatherchance) == 1 and weatherkey != "":
-            weatherchance = 6
+            # Reset weatherchance var
+            weatherchance = defaultweatherchance
+
             # Talk about weather using Openweathermap API
 
             # My API key
@@ -372,8 +407,8 @@ while True:
             # base_url variable to store the Openweathermap URL 
             base_url = "http://api.openweathermap.org/data/2.5/weather?"
 
-            # Set city name
-            city_name = "Auburn Hills"
+            # Set city name [REFERENCED IN MAIN.PY OPTIONS]
+            # city_name = "Auburn Hills"
 
             # complete_url variable to store 
             # complete url address 
@@ -420,7 +455,7 @@ while True:
                 weather_description = z[0]["description"] 
 
                 # Include weather info in longspeechstring var
-                longspeechstring += "\nLet's check up on the weather outside! Current conditions outside are " + str(weather_description) + ", and the temperature is " + str(round(current_temperature)) + " degrees."
+                longspeechstring += "\nLet's check up on the weather outside! Here in " + str(city_name) + ", current conditions are " + str(weather_description) + ", and the temperature is " + str(round(current_temperature)) + " degrees."
 
         # Increase the chance to speak the weather info
         if weatherchance > 2:
@@ -434,22 +469,28 @@ while True:
         listPlayedSongs.append(potentialsong) # Add the song index to the list of played songs
         songselectionint = potentialsong # Set the next song to the one that was randomly chosen
         print("Songs played: (Includes upcoming song) " + str(listPlayedSongs)) # Show list of played song numbers
+        print("Likelihood VARs:\nPSA: " + str(psachance) + "\nWeather: " + str(weatherchance) + "\nWelcomeMessage: " + str(welcomechance) + "\nWeekdayMessage: " + str(weekdaychance)) # Show chance VARs
         
         # If the playlist isn't overridden, chance to add the weekday text to longspeechstring var
         if not overrideplaylist:
             if random.randint(0,weekdaychance) == 1:
                 longspeechstring += " " + str(weekdaytext)
+                # Reset weekdaychance var
+                weekdaychance = defaultweekdaychance
             # Increase the chance to speak the current weekday
             if weekdaychance > 2:
                 weekdaychance -= 1
 
         # Add the next song info to the longspeechstring var
-        longspeechstring += "\n" + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
+        # longspeechstring += "\n" + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
+        longspeechstring += "\n" + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(re.sub("[\W ]+"," ",str(playlistnames[songselectionint]).replace(".","_")).replace("_",". ")) + "."
 
         # Chance to play a PSA
-        if random.randint(0,psachance) == 1:
+        if random.randint(0,psachance) == 1 and psaplaylisturl != "":
             playpsa = True
             longspeechstring += "\nBut first. A message from our sponsors. Don't touch that dial."
+            # Reset psachance var
+            psachance = defaultpsachance
 
         # Chance to include "Stay safe out there!" in speech
         if random.randint(0,4) == 1:
@@ -489,30 +530,36 @@ while True:
 
         # Play the PSA if triggered
         if playpsa == True:
-            psachance = 6 # Reset PSA chance var
             playpsa = False # Prevent PSA from running twice
             
-            # Play PSA using headless VLC
-            url = psaplaylist[random.randint(1,len(psaplaylist)-1)]
-            video = pafy.new(url)
-            best = video.getbest()
-            playurl = best.url
+            # Play the PSA, if the video isn't available, repeat the process until one is
+            while True:
+                try:
+                    # Play PSA using headless VLC
+                    url = psaplaylist[random.randint(1,len(psaplaylist)-1)]
+                    video = pafy.new(url)
+                    best = video.getbest()
+                    playurl = best.url
 
-            Instance = vlc.Instance("--vout=dummy")
-            player = Instance.media_player_new()
-            Media = Instance.media_new(playurl)
-            Media.get_mrl()
-            player.set_media(Media)
-            player.play()
-            player.audio_set_volume(95)
+                    Instance = vlc.Instance("--vout=dummy")
+                    player = Instance.media_player_new()
+                    Media = Instance.media_new(playurl)
+                    Media.get_mrl()
+                    player.set_media(Media)
+                    player.play()
+                    player.audio_set_volume(70)
 
-            time.sleep(1.5)
-            duration = player.get_length() / 1000
-            time.sleep(duration)
-            player.stop()
-            player.release()
-            Media.release()
-            Instance.release()
+                    time.sleep(1.5)
+                    duration = player.get_length() / 1000
+                    time.sleep(duration)
+                    player.stop()
+                    player.release()
+                    Media.release()
+                    Instance.release()
+                    pass
+                    break # Break out of statement
+                except (RuntimeError, TypeError, NameError, OSError):
+                    pass # Repeat
         
         # Increase chance to play PSA next time
         if psachance > 2:
@@ -527,5 +574,5 @@ while True:
                 pygame.time.wait(100)
     except (RuntimeError, TypeError, NameError, OSError):
         # Say that something has gone wrong
-        speaktext("It looks like something has gone wrong. Please wait while I restart the station.")
+        speaktext("It looks like that song isn't available. Please wait while I restart the station.")
         os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script
