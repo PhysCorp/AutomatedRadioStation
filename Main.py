@@ -40,7 +40,7 @@ mixer.init()
 playintro = True # Play the radio show intro upon first launch
 advancedspeech = False # Use AI-based speech generation service
 defaultpsachance = 8 # Likelihood of playing a PSA [1/[x] chance]
-defaultweatherchance = 8 # Likelihood of mentioning the weather [1/[x] chance]
+defaultweatherchance = 10 # Likelihood of mentioning the weather [1/[x] chance]
 defaultwelcomechance = 8 # Likelihood of mentioning the welcome message again [1/[x] chance]
 defaultweekdaychance = 8 # Likelihood of mentioning the weekday again [1/[x] chance]
 weatherkey = "" # API key for Openweathermap
@@ -60,7 +60,7 @@ psachance = defaultpsachance # Likelihood of playing a PSA [1/[x] chance]
 weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[x] chance]
 welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
-versioninfo = "21.2.0" # Script version number [YEAR.MONTH.BUILDNUM]
+versioninfo = "21.2.1" # Script version number [YEAR.MONTH.BUILDNUM]
 
 # Init radio sounds (The number of available radio sounds to be played)
 DIR= os.path.join(maindirectory,"Assets/SoundEffects")
@@ -117,7 +117,7 @@ def speaktext(message):
         # UNCOMMENT AN OPTION HERE TO CHANGE THE VOICE FOR MAC AND LINUX
         # engine.say(str(message)) # ESPEAK TTS [1/2]
         # engine.runAndWait() # ESPEAK TTS [2/2]
-        os.system("espeak -p 50 -s 165 -v mb/mb-us2 \"" + str(message) + "\"") # MBROLA TTS
+        os.system("espeak -p 50 -s 165 -v mb/mb-us3 \"" + str(message) + "\"") # MBROLA TTS
         # os.system("wine \"" + str(maindirectory) + "/Tools/mimic.exe\" --setf duration_stretch=0.8 -t \"" + str(message) + "\"") # Mycroft Mimic
         # os.system("festival -b '(voice_cmu_us_slt_arctic_hts)' '(SayText \"" + str(message).replace("\"","'") + "\")'") # Festival TTS
     else:
@@ -351,7 +351,7 @@ while True:
             longspeechstring = "" # Clear the longspeechstring var
             if advancedspeech: # If advanced speech is enabled,
                 longspeechstring += "Announcer two here. " # Add the text "announcer two here" to longspeechstring var
-            longspeechstring += "\n" + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(re.sub("[\W ]+"," ",str(playlistnames[songselectionint]).replace(".","_")).replace("_",". ")) + "."
+            longspeechstring += "\n" + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
             # longspeechstring += "\n" + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
             
             # Chance to speak "Stay safe out there!"
@@ -495,7 +495,7 @@ while True:
 
         # Add the next song info to the longspeechstring var
         # longspeechstring += "\n" + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
-        longspeechstring += "\n" + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(re.sub("[\W ]+"," ",str(playlistnames[songselectionint]).replace(".","_")).replace("_",". ")) + "."
+        longspeechstring += "\n" + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
 
         # Chance to play a PSA
         if random.randint(0,psachance) == 1 and psaplaylisturl != "":
