@@ -17,6 +17,7 @@ from selenium.webdriver import FirefoxOptions # Scrape websites for information 
 import requests, json # Gather weather info from Openweathermap
 import sys # Used to restart the script at midnight
 import platform # Identify which OS the script is running on
+# from gtts import gTTS # Use Google Text to Speech system
 # from textgenrnn import textgenrnn # AI-based text generation
 
 # Setup AI text generation
@@ -38,10 +39,10 @@ mixer.init()
 # Options
 playintro = True # Play the radio show intro upon first launch
 advancedspeech = False # Use AI-based speech generation service
-defaultpsachance = 10 # Likelihood of playing a PSA [1/[x] chance]
-defaultweatherchance = 10 # Likelihood of mentioning the weather [1/[x] chance]
-defaultwelcomechance = 10 # Likelihood of mentioning the welcome message again [1/[x] chance]
-defaultweekdaychance = 10 # Likelihood of mentioning the weekday again [1/[x] chance]
+defaultpsachance = 8 # Likelihood of playing a PSA [1/[x] chance]
+defaultweatherchance = 8 # Likelihood of mentioning the weather [1/[x] chance]
+defaultwelcomechance = 8 # Likelihood of mentioning the welcome message again [1/[x] chance]
+defaultweekdaychance = 8 # Likelihood of mentioning the weekday again [1/[x] chance]
 weatherkey = "" # API key for Openweathermap
 city_name = "Auburn Hills" # Name of city for weather info
 overrideplaylist = "" # Override YouTube playlist URL for music
@@ -112,9 +113,18 @@ def speaktext(message):
         with open(str(maindirectory) + "/Output.txt","w") as fileoutput:
             fileoutput.write("\n" + str(message))
             fileoutput.close()
-    engine.say(str(message))
-    engine.runAndWait()
-
+    if str(platform.system()) == "Darwin" or str(platform.system()) == "Linux":
+        # UNCOMMENT AN OPTION HERE TO CHANGE THE VOICE FOR MAC AND LINUX
+        # engine.say(str(message)) # ESPEAK TTS [1/2]
+        # engine.runAndWait() # ESPEAK TTS [2/2]
+        os.system("espeak -p 50 -s 165 -v mb/mb-us2 \"" + str(message) + "\"") # MBROLA TTS
+        # os.system("wine \"" + str(maindirectory) + "/Tools/mimic.exe\" --setf duration_stretch=0.8 -t \"" + str(message) + "\"") # Mycroft Mimic
+        # os.system("festival -b '(voice_cmu_us_slt_arctic_hts)' '(SayText \"" + str(message).replace("\"","'") + "\")'") # Festival TTS
+    else:
+        # UNCOMMENT AN OPTION HERE TO CHANGE THE VOICE FOR WINDOWS
+        engine.say(str(message)) # ESPEAK TTS [1/2]
+        engine.runAndWait() # ESPEAK TTS [2/2]
+        # os.system("\"" + str(maindirectory) + "/Tools/mimic.exe\" --setf duration_stretch=0.8 -t \"" + str(message) + "\"") # Mycroft Mimic
 
 # Tell user that the program is starting
 speaktext("The radio will be back online in a moment!")
@@ -353,7 +363,6 @@ while True:
 
             # Prevent the intro from playing again
             playintro = False
-
 
         # If writesonginfo is enabled, write the song title to SongInfo.txt
         # if writesonginfo == True:
