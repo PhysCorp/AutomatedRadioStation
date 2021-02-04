@@ -12,7 +12,7 @@ This software is built with Python in Visual Studio Code. The program scrapes a 
 
 # Requirements:
 This program requires that you have the following installed, as well as all the dependencies listed in requirements.txt:
-firefox, espeak, python3-venv, firefox-geckodriver
+firefox, espeak, python3-venv, firefox-geckodriver, mbrola, mbrola-us2, mbrola-us3
 
 Advanced speech synthesis requires Real-Time-Voice-Cloning by blue-fish
 https://github.com/blue-fish/Real-Time-Voice-Cloning
@@ -22,7 +22,7 @@ This should be used on a Debian-based Linux distro!
 
 Prereq: Clone the repo. Terminal: "git clone https://github.com/PhysCorp/AutomatedRadioStation.git"
 
-1) Make sure Python 3.8.5+ and the additional packages are installed! Terminal: "sudo apt install python3 python3-pip firefox firefox-geckodriver python3-venv espeak"
+1) Make sure Python 3.8.5+ and the additional packages are installed! Terminal: "sudo apt install python3 python3-pip firefox firefox-geckodriver python3-venv espeak mbrola mbrola-us2 mbrola-us3"
 2) Change to project directory, then use PIP to install required files. Terminal: "cd AutomatedRadioStation && pip3 install -r requirements.txt"
 *Optionally, use PIP to install required files for voice synthesis. Terminal: "pip3 install -r requirements_voice.txt"
 3) Configure any speech scripts/playlists (See "Configuration Tab Below").
