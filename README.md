@@ -21,7 +21,7 @@ Advanced speech synthesis requires Real-Time-Voice-Cloning by blue-fish
 https://github.com/blue-fish/Real-Time-Voice-Cloning
 
 # Install Instructions:
-This should be used on a Debian-based Linux distro!
+This should be used on a Debian-based Linux distro! I haven't tested other Linux distros, as well as Windows and Mac OS! Expect multiple errors.
 
 Prereq: Clone the repo. Terminal: "git clone https://github.com/PhysCorp/AutomatedRadioStation.git"
 
