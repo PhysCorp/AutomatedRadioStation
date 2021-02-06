@@ -47,7 +47,7 @@ city_name = "Auburn Hills" # Name of city for weather info
 overrideplaylist = "" # Override YouTube playlist URL for music
 writeoutput = False # Whether or not to print the announcer subtitles to Output.txt
 writesonginfo = False # Whether or not to print the song title to SongInfo.txt
-psaplaylisturl = "https://www.youtube.com/playlist?list=PLUJZiQIClkwdxdCVag0ffmjPNdnHDlb02" # YouTube playlist URL for PSAs
+psaplaylisturl = "https://www.youtube.com/playlist?list=PL7IiPgV2w_VZdSk9DeGc6Ot_kgDlH_C4E" # YouTube playlist URL for PSAs
 
 # Declare Variables
 longspeechstring = "" # Used to append multiple strings before synthesizing audio
@@ -60,7 +60,7 @@ weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[
 welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
 timechance = defaulttimechance # Likelihood of mentioning the time [1/[x] chance]
-versioninfo = "21.2.2" # Script version number [YEAR.MONTH.BUILDNUM]
+versioninfo = "21.2.3" # Script version number [YEAR.MONTH.BUILDNUM]
 savedtime = "" # The text version of the time. Used to compare to actual time and determine when to start the next playlist
 
 # Determine the amount of random radio sounds available
@@ -112,9 +112,9 @@ def speaktext(message):
         engine.say(str(message)) # System TTS [1/2]
         engine.runAndWait() # System TTS [2/2]
     else: # On Linux, use MBROLA through espeak
-        # os.system("espeak -p 50 -s 165 -v mb/mb-us2 \"" + str(message) + "\"") # MBROLA TTS
-        engine.say(str(message)) # System TTS [1/2]
-        engine.runAndWait() # System TTS [2/2]
+        os.system("espeak -p 50 -s 165 -v mb/mb-us2 \"" + str(message) + "\"") # MBROLA TTS
+        # engine.say(str(message)) # System TTS [1/2]
+        # engine.runAndWait() # System TTS [2/2]
 
 # Tell user that the program is starting
 speaktext("The radio will be back online in a moment!")
@@ -726,7 +726,7 @@ while True:
         # Chance to play a PSA
         if random.randint(0,psachance) == 1 and psaplaylisturl != "":
             playpsa = True
-            longspeechstring += "\nBut first. A message from our sponsors. Don't touch that dial."
+            longspeechstring += "\nBut first, here's a brief message. Don't touch that dial."
             # Reset psachance var
             psachance = defaultpsachance
 
