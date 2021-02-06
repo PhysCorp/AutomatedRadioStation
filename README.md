@@ -40,3 +40,6 @@ Prereq: Clone the repo. Terminal: "git clone https://github.com/PhysCorp/Automat
 - None ATM!
 
 <img src="https://github.com/PhysCorp/AutomatedRadioStation/blob/main/frame.png" width="128" height="128">
+
+# Credits:
+Intro/Wait music from Jukedeck - create your own at http://jukedeck.com
