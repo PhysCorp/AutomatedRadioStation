@@ -60,7 +60,7 @@ weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[
 welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
 timechance = defaulttimechance # Likelihood of mentioning the time [1/[x] chance]
-versioninfo = "21.2.3" # Script version number [YEAR.MONTH.BUILDNUM]
+versioninfo = "21.2.4" # Script version number [YEAR.MONTH.BUILDNUM]
 savedtime = "" # The text version of the time. Used to compare to actual time and determine when to start the next playlist
 
 # Determine the amount of random radio sounds available
@@ -112,9 +112,9 @@ def speaktext(message):
         engine.say(str(message)) # System TTS [1/2]
         engine.runAndWait() # System TTS [2/2]
     else: # On Linux, use MBROLA through espeak
-        os.system("espeak -p 50 -s 165 -v mb/mb-us2 \"" + str(message) + "\"") # MBROLA TTS
-        # engine.say(str(message)) # System TTS [1/2]
-        # engine.runAndWait() # System TTS [2/2]
+        # os.system("espeak -p 50 -s 165 -v mb/mb-us2 \"" + str(message) + "\"") # MBROLA TTS
+        engine.say(str(message)) # System TTS [1/2]
+        engine.runAndWait() # System TTS [2/2]
 
 # Tell user that the program is starting
 speaktext("The radio will be back online in a moment!")
@@ -145,35 +145,35 @@ currenttime = int(timeobject.strftime("%H"))
 # Determine the weekday, then set the appropriate playlist URL and caption
 # Monday
 if datetime.today().weekday() == 0:
-    if currenttime >= 0 and currenttime <= 8: # Early Morning [Monday]
+    if currenttime >= 0 and currenttime < 8: # Early Morning [Monday]
         url = "https://www.youtube.com/playlist?list=PLjzeyhEA84sQKuXp-rpM1dFuL2aQM_a3S" # Set playlist URL
         print("Using playlist for Monday.") # Print current weekday to stdout
         weekdaytext = "Well, it's Monday. Why are you up so early? We're playing rock music all day! Let's start off your early morning with some blues music." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Early Morning"
 
-    if currenttime > 8 and currenttime <= 12: # Morning [Monday]
+    if currenttime >= 8 and currenttime < 12: # Morning [Monday]
         url = "https://www.youtube.com/playlist?list=PLOci2rRb5g3iUxFh_olD0dWGpzWPwdlOi" # Set playlist URL
         print("Using playlist for Monday.") # Print current weekday to stdout
         weekdaytext = "Well, it's Monday morning. We're playing rock music all day! Let's get your day started with some punk rock." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Morning"
 
-    if currenttime > 12 and currenttime <= 16: # Afternoon [Monday]
+    if currenttime >= 12 and currenttime < 16: # Afternoon [Monday]
         url = "https://www.youtube.com/playlist?list=PLGBuKfnErZlD_VXiQ8dkn6wdEYHbC3u0i" # Set playlist URL
         print("Using playlist for Monday.") # Print current weekday to stdout
         weekdaytext = "Hope you're having a solid Monday afternoon. We're playing rock music all day! Let's get the blood pumping with some heavy metal." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Afternoon"
 
-    if currenttime > 16 and currenttime <= 20: # Evening [Monday]
+    if currenttime >= 16 and currenttime < 20: # Evening [Monday]
         url = "https://www.youtube.com/playlist?list=PLNxOe-buLm6cz8UQ-hyG1nm3RTNBUBv3K" # Set playlist URL
         print("Using playlist for Monday.") # Print current weekday to stdout
         weekdaytext = "It's Monday evening. We're playing rock music all day! Here's some classics that you should be familiar with." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Evening"
     
-    if currenttime > 20 and currenttime <= 24: # Late Night [Monday]
+    if currenttime >= 20 and currenttime < 24: # Late Night [Monday]
         url = "https://www.youtube.com/playlist?list=PL4033C6D21D7D28AC" # Set playlist URL
         print("Using playlist for Monday.") # Print current weekday to stdout
         weekdaytext = "It's Monday night. Let's end the day the right way with some death metal." # Set speech text according to weekday
@@ -182,35 +182,35 @@ if datetime.today().weekday() == 0:
 
 # Tuesday
 elif datetime.today().weekday() == 1:
-    if currenttime >= 0 and currenttime <= 8: # Early Morning [Tuesday]
+    if currenttime >= 0 and currenttime < 8: # Early Morning [Tuesday]
         url = "https://www.youtube.com/playlist?list=PLwIEpqpG3Tr8aI2HwnT1YwNtDMVKf8KUO" # Set playlist URL
         print("Using playlist for Tuesday.") # Print current weekday to stdout
         weekdaytext = "It's officially Tuesday. Today, we're focusing on comedy, parodies, and generally weird music! Let's start with some comedy rock." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Early Morning"
 
-    if currenttime > 8 and currenttime <= 12: # Morning [Tuesday]
+    if currenttime >= 8 and currenttime < 12: # Morning [Tuesday]
         url = "https://www.youtube.com/playlist?list=PL7IiPgV2w_VZn8EgvZR8ohux9A5uup91n" # Set playlist URL
         print("Using playlist for Tuesday.") # Print current weekday to stdout
         weekdaytext = "Its Tuesday morning. Today, we're focusing on comedy, parodies, and generally weird music! Here's some messed up music with weird edits to get you going!" # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Morning"
 
-    if currenttime > 12 and currenttime <= 16: # Afternoon [Tuesday]
+    if currenttime >= 12 and currenttime < 16: # Afternoon [Tuesday]
         url = "https://www.youtube.com/playlist?list=PL4722096DA7FECEFD" # Set playlist URL
         print("Using playlist for Tuesday.") # Print current weekday to stdout
         weekdaytext = "Its Tuesday afternoon. We're focusing on comedy, parodies, and generally weird music! Right now, you're listening to music parodies!" # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Afternoon"
 
-    if currenttime > 16 and currenttime <= 20: # Evening [Tuesday]
+    if currenttime >= 16 and currenttime < 20: # Evening [Tuesday]
         url = "https://www.youtube.com/playlist?list=PL0Oo37i-_yeSwK2GaYxQEAV0BsjGDM3a8" # Set playlist URL
         print("Using playlist for Tuesday.") # Print current weekday to stdout
         weekdaytext = "Its Tuesday evening. We're focusing on comedy, parodies, and generally weird music! Let's listen to some medieval folk rock." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Evening"
     
-    if currenttime > 20 and currenttime <= 24: # Late Night [Tuesday]
+    if currenttime >= 20 and currenttime < 24: # Late Night [Tuesday]
         url = "https://www.youtube.com/playlist?list=PLhmtZUpTH9coZD4Y0XNID7tZFmLo1bytt" # Set playlist URL
         print("Using playlist for Tuesday.") # Print current weekday to stdout
         weekdaytext = "Its Tuesday night. Let's end the day of weird music with some horror country." # Set speech text according to weekday
@@ -219,35 +219,35 @@ elif datetime.today().weekday() == 1:
 
 # Wednesday
 elif datetime.today().weekday() == 2:
-    if currenttime >= 0 and currenttime <= 8: # Early Morning [Wednesday]
+    if currenttime >= 0 and currenttime < 8: # Early Morning [Wednesday]
         url = "https://www.youtube.com/playlist?list=PLMC9KNkIncKtPzgY-5rmhvj7fax8fdxoj" # Set playlist URL
         print("Using playlist for Wednesday.") # Print current weekday to stdout
         weekdaytext = "It's officially hump day. Today's theme is nostalgic music! Time for you to jam out to some recent pop hits." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Early Morning"
 
-    if currenttime > 8 and currenttime <= 12: # Morning [Wednesday]
+    if currenttime >= 8 and currenttime < 12: # Morning [Wednesday]
         url = "https://www.youtube.com/playlist?list=PL7IiPgV2w_VaEvjQ8YedFjlcGTbhCze9U" # Set playlist URL
         print("Using playlist for Wednesday.") # Print current weekday to stdout
         weekdaytext = "It's the morning of hump day. Today's theme is nostalgic music! Let's get you started with some internet classics." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Morning"
 
-    if currenttime > 12 and currenttime <= 16: # Afternoon [Wednesday]
+    if currenttime >= 12 and currenttime < 16: # Afternoon [Wednesday]
         url = "https://www.youtube.com/playlist?list=PL7Q2ZklqtR8B_EAUfXt5tAZkxhCApfFkL" # Set playlist URL
         print("Using playlist for Wednesday.") # Print current weekday to stdout
         weekdaytext = "It's Wednesday afternoon. You've made it over the hump of hump day! Today's theme is nostalgic music, and we're listening to music around 2010." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Afternoon"
 
-    if currenttime > 16 and currenttime <= 20: # Evening [Wednesday]
+    if currenttime >= 16 and currenttime < 20: # Evening [Wednesday]
         url = "https://www.youtube.com/playlist?list=PLpuDUpB0osJmZQ0a3n6imXirSu0QAZIqF" # Set playlist URL
         print("Using playlist for Wednesday.") # Print current weekday to stdout
         weekdaytext = "It's Wednesday night. The theme is nostalgic music. We'll go further back in time and listen to music from the 2000s." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Evening"
     
-    if currenttime > 20 and currenttime <= 24: # Late Night [Wednesday]
+    if currenttime >= 20 and currenttime < 24: # Late Night [Wednesday]
         url = "https://www.youtube.com/playlist?list=PLetgZKHHaF-Zq1Abh-ZGC4liPd_CV3Uo4" # Set playlist URL
         print("Using playlist for Wednesday.") # Print current weekday to stdout
         weekdaytext = "It's Wednesday night. Let's end the day with some hip hop and rap." # Set speech text according to weekday
@@ -256,35 +256,35 @@ elif datetime.today().weekday() == 2:
 
 # Thursday
 elif datetime.today().weekday() == 3:
-    if currenttime >= 0 and currenttime <= 8: # Early Morning [Thursday]
+    if currenttime >= 0 and currenttime < 8: # Early Morning [Thursday]
         url = "https://www.youtube.com/playlist?list=PL4QNnZJr8sRNKjKzArmzTBAlNYBDN2h-J" # Set playlist URL
         print("Using playlist for Thursday.") # Print current weekday to stdout
         weekdaytext = "It's now Thursday morning, and early at that. Today we're focusing on music from around the world. Let's start with some K pop." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Early Morning"
 
-    if currenttime > 8 and currenttime <= 12: # Morning [Thursday]
+    if currenttime >= 8 and currenttime < 12: # Morning [Thursday]
         url = "https://www.youtube.com/playlist?list=PLV9du90-nOngPg_V4By29gvrovqAguGuN" # Set playlist URL
         print("Using playlist for Thursday.") # Print current weekday to stdout
         weekdaytext = "It's Thursday morning. Today we're focusing on music from around the world. You're about to hear country anthems and world propaganda." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Morning"
 
-    if currenttime > 12 and currenttime <= 16: # Afternoon [Thursday]
+    if currenttime >= 12 and currenttime < 16: # Afternoon [Thursday]
         url = "https://www.youtube.com/playlist?list=PLZ6V4Rz0ltCP6yVKO390YPqqfjWsgrq_n" # Set playlist URL
         print("Using playlist for Thursday.") # Print current weekday to stdout
         weekdaytext = "Thursday afternoon. We're focusing on music from around the world. Let's take a trip to India." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Afternoon"
 
-    if currenttime > 16 and currenttime <= 20: # Evening [Thursday]
+    if currenttime >= 16 and currenttime < 20: # Evening [Thursday]
         url = "https://www.youtube.com/playlist?list=PLX9U3Rv7Wy7Wbi3iV2uxFo8BOVHjIehUc" # Set playlist URL
         print("Using playlist for Thursday.") # Print current weekday to stdout
         weekdaytext = "It's Thursday evening. We're focusing on music from around the world. Now, let's take a trip to Africa." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Evening"
     
-    if currenttime > 20 and currenttime <= 24: # Late Night [Thursday]
+    if currenttime >= 20 and currenttime < 24: # Late Night [Thursday]
         url = "https://www.youtube.com/playlist?list=PLrZlOVu0fKqHo1ilGq8vYCuC7mUWej_nP" # Set playlist URL
         print("Using playlist for Thursday.") # Print current weekday to stdout
         weekdaytext = "It's Thursday night. Let's end our world music theme with some American patriotic music." # Set speech text according to weekday
@@ -293,35 +293,35 @@ elif datetime.today().weekday() == 3:
 
 # Friday
 elif datetime.today().weekday() == 4:
-    if currenttime >= 0 and currenttime <= 8: # Early Morning [Friday]
+    if currenttime >= 0 and currenttime < 8: # Early Morning [Friday]
         url = "https://www.youtube.com/playlist?list=PLCD0445C57F2B7F41" # Set playlist URL
         print("Using playlist for Friday.") # Print current weekday to stdout
         weekdaytext = "It's early Friday morning. Today's decade day! We'll start by listening to the best of the eighties." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Early Morning"
 
-    if currenttime > 8 and currenttime <= 12: # Morning [Friday]
+    if currenttime >= 8 and currenttime < 12: # Morning [Friday]
         url = "https://www.youtube.com/playlist?list=PLGBuKfnErZlAkaUUy57-mR97f8SBgMNHh" # Set playlist URL
         print("Using playlist for Friday.") # Print current weekday to stdout
         weekdaytext = "Friday is here. Today's decade day! Next, we'll hear the best of the seventies." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Morning"
 
-    if currenttime > 12 and currenttime <= 16: # Afternoon [Friday]
+    if currenttime >= 12 and currenttime < 16: # Afternoon [Friday]
         url = "https://www.youtube.com/playlist?list=PLGBuKfnErZlCkRRgt06em8nbXvcV5Sae7" # Set playlist URL
         print("Using playlist for Friday.") # Print current weekday to stdout
         weekdaytext = "It's Friday afternoon. Today's decade day! We're moving on to the best of the sixties." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Afternoon"
 
-    if currenttime > 16 and currenttime <= 20: # Evening [Friday]
+    if currenttime >= 16 and currenttime < 20: # Evening [Friday]
         url = "https://www.youtube.com/playlist?list=PLRZlMhcYkA2Fhwg-NxJewUIgm01o9fzwB" # Set playlist URL
         print("Using playlist for Friday.") # Print current weekday to stdout
         weekdaytext = "It's Friday evening. Today's decade day! Let's listen to the best of the 40s!" # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Evening"
     
-    if currenttime > 20 and currenttime <= 24: # Late Night [Friday]
+    if currenttime >= 20 and currenttime < 24: # Late Night [Friday]
         url = "https://www.youtube.com/playlist?list=PLXRivw5Pd9qlM5efsL4c7js8teYFVy3Dk" # Set playlist URL
         print("Using playlist for Friday.") # Print current weekday to stdout
         weekdaytext = "It's Friday night. Let's end the day with music from the roaring twenties!" # Set speech text according to weekday
@@ -330,35 +330,35 @@ elif datetime.today().weekday() == 4:
 
 # Saturday
 elif datetime.today().weekday() == 5:
-    if currenttime >= 0 and currenttime <= 8: # Early Morning [Saturday]
+    if currenttime >= 0 and currenttime < 8: # Early Morning [Saturday]
         url = "https://www.youtube.com/playlist?list=PLxvodScTx2RtAOoajGSu6ad4p8P8uXKQk" # Set playlist URL
         print("Using playlist for Saturday.") # Print current weekday to stdout
         weekdaytext = "Today's Saturday, time to relax and have fun! We'll start the morning with some orchestral music." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Early Morning"
 
-    if currenttime > 8 and currenttime <= 12: # Morning [Saturday]
+    if currenttime >= 8 and currenttime < 12: # Morning [Saturday]
         url = "https://www.youtube.com/playlist?list=PLrnb8c3hFJatjyJ-wFMuFGANNoo7-LZsG" # Set playlist URL
         print("Using playlist for Saturday.") # Print current weekday to stdout
         weekdaytext = "Today's Saturday, time to relax and have fun! Let your morning begin with popular video game soundtracks." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Morning"
 
-    if currenttime > 12 and currenttime <= 16: # Afternoon [Saturday]
+    if currenttime >= 12 and currenttime < 16: # Afternoon [Saturday]
         url = "https://www.youtube.com/playlist?list=PL4BrNFx1j7E5qDxSPIkeXgBqX0J7WaB2a" # Set playlist URL
         print("Using playlist for Saturday.") # Print current weekday to stdout
         weekdaytext = "Today's Saturday, time to relax and have fun! Let's continue your afternoon with some film scores!" # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Afternoon"
 
-    if currenttime > 16 and currenttime <= 20: # Evening [Saturday]
+    if currenttime >= 16 and currenttime < 20: # Evening [Saturday]
         url = "https://www.youtube.com/playlist?list=PL6rfTXx-6y2U9LPalxmyWb4Z9_YDomxfs" # Set playlist URL
         print("Using playlist for Saturday.") # Print current weekday to stdout
         weekdaytext = "Today's Saturday, time to relax and have fun! Now that it's the evening, we'll listen to songs in musical theater." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Evening"
     
-    if currenttime > 20 and currenttime <= 24: # Late Night [Saturday]
+    if currenttime >= 20 and currenttime < 24: # Late Night [Saturday]
         url = "https://www.youtube.com/playlist?list=PLbcjjn493-S_DcwEVTPkVRz5zZQSo3hjE" # Set playlist URL
         print("Using playlist for Saturday.") # Print current weekday to stdout
         weekdaytext = "It's Saturday night, still time to relax and have fun! We'll end the day with some pirate metal." # Set speech text according to weekday
@@ -367,35 +367,35 @@ elif datetime.today().weekday() == 5:
 
 # Sunday
 elif datetime.today().weekday() == 6:
-    if currenttime >= 0 and currenttime <= 8: # Early Morning [Sunday]
+    if currenttime >= 0 and currenttime < 8: # Early Morning [Sunday]
         url = "https://www.youtube.com/playlist?list=PLWtAfhR9YD1wdKOTDqCFYoFUcThRCfAjp" # Set playlist URL
         print("Using playlist for Sunday.") # Print current weekday to stdout
         weekdaytext = "It's Sunday. We're serving jazz all day baby. Smooth jazz will be deployed in 3, 2, 1." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Early Morning"
 
-    if currenttime > 8 and currenttime <= 12: # Morning [Sunday]
+    if currenttime >= 8 and currenttime < 12: # Morning [Sunday]
         url = "https://www.youtube.com/playlist?list=PL8F6B0753B2CCA128" # Set playlist URL
         print("Using playlist for Sunday.") # Print current weekday to stdout
         weekdaytext = "It's Sunday morning. We're serving jazz all day baby. Let's start your morning by listening to important figures in jazz." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Morning"
 
-    if currenttime > 12 and currenttime <= 16: # Afternoon [Sunday]
+    if currenttime >= 12 and currenttime < 16: # Afternoon [Sunday]
         url = "https://www.youtube.com/playlist?list=PLDC827E741DA933F0" # Set playlist URL
         print("Using playlist for Sunday.") # Print current weekday to stdout
         weekdaytext = "It's Sunday afternoon. We're serving jazz all day baby. Time to get moving to some big band music." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Afternoon"
 
-    if currenttime > 16 and currenttime <= 20: # Evening [Sunday]
+    if currenttime >= 16 and currenttime < 20: # Evening [Sunday]
         url = "https://www.youtube.com/playlist?list=PLk-_AvR22RueziRgt5GVuirih223y1UNJ" # Set playlist URL
         print("Using playlist for Sunday.") # Print current weekday to stdout
         weekdaytext = "It's Sunday evening. We're serving jazz all day baby. Let's cool down to some bossa nova." # Set speech text according to weekday
         savedweekday = datetime.today().weekday()
         savedtime = "Evening"
     
-    if currenttime > 20 and currenttime <= 24: # Late Night [Sunday]
+    if currenttime >= 20 and currenttime < 24: # Late Night [Sunday]
         url = "https://www.youtube.com/playlist?list=PL3O5lr1JOzLe6CXisC7PSbveY6IBLxdlg" # Set playlist URL
         print("Using playlist for Sunday.") # Print current weekday to stdout
         weekdaytext = "It's Sunday night. Let's end the day with some jazz fusion." # Set speech text according to weekday
@@ -764,19 +764,19 @@ while True:
         timeobject = datetime.now()
         currenttime = int(timeobject.strftime("%H"))
 
-        if currenttime >= 0 and currenttime <= 8: # Early Morning
+        if currenttime >= 0 and currenttime < 8: # Early Morning
             savedtimecomparison = "Early Morning"
 
-        elif currenttime > 8 and currenttime <= 12: # Morning
+        elif currenttime >= 8 and currenttime < 12: # Morning
             savedtimecomparison = "Morning"
 
-        elif currenttime > 12 and currenttime <= 16: # Afternoon
+        elif currenttime >= 12 and currenttime < 16: # Afternoon
             savedtimecomparison = "Afternoon"
 
-        elif currenttime > 16 and currenttime <= 20: # Evening
+        elif currenttime >= 16 and currenttime < 20: # Evening
             savedtimecomparison = "Evening"
         
-        elif currenttime > 20 and currenttime <= 24: # Late Night
+        elif currenttime >= 20 and currenttime < 24: # Late Night
             savedtimecomparison = "Late Night"
         
         # If mismatch, restart the station
