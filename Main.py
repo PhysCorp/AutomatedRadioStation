@@ -15,10 +15,11 @@ import pygame.mixer, pygame.time # Sound mixing [2/2]
 from selenium import webdriver # Scrape websites for information [1/2]
 from selenium.webdriver import FirefoxOptions # Scrape websites for information [2/2]
 import requests, json # Gather weather info from Openweathermap
-import sys # Used to restart the script at midnight
+import sys # Used to restart the script at midnight, as well as script args
 import platform # Identify which OS the script is running on
 import json # Parse JSON files for API and playlist info
 # from textgenrnn import textgenrnn # AI-based text generation
+from google.cloud import texttospeech # [PAID] Google Cloud Text to Speech
 
 # Setup AI text generation
 # textgen = textgenrnn()
@@ -46,6 +47,7 @@ with open(str(maindirectory) + '/Options.json', 'r') as json_file:
 # Options
 playintro = options_dict["playintro"] # Play the radio show intro on launch
 advancedspeech = options_dict["advancedspeech"] # Use AI-based speech generation service
+wavenet = options_dict["wavenet"] # Bool for whether or not to use Google TTS API
 defaultpsachance = options_dict["defaultpsachance"] # Likelihood of playing a PSA [1/[x] chance]
 defaultweatherchance = options_dict["defaultweatherchance"] # Likelihood of mentioning the weather [1/[x] chance]
 defaultwelcomechance = options_dict["defaultwelcomechance"] # Likelihood of mentioning the welcome message again [1/[x] chance]
@@ -67,8 +69,14 @@ weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[
 welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
 timechance = defaulttimechance # Likelihood of mentioning the time [1/[x] chance]
-versioninfo = "21.2.6" # Script version number [YEAR.MONTH.BUILDNUM]
+versioninfo = "21.2.7" # Script version number [YEAR.MONTH.BUILDNUM]
 savedtime = "" # The text version of the time. Used to compare to actual time and determine when to start the next playlist
+
+# Override radio intro if specified by script args
+if len(sys.argv) > 1:
+    if "skipintro" in sys.argv:
+        playintro = False
+        print("\n[INFO] Script arguments specified playintro to False! Skipping radio intro sequence.\n")
 
 # Retrieve API keys from JSON file
 with open(str(maindirectory) + '/APIKeys.json', 'r') as json_file:
@@ -85,6 +93,52 @@ radiosoundcount = len([name for name in os.listdir(DIR) if os.path.isfile(os.pat
 # Determine the amount of waiting songs available
 DIR= os.path.join(maindirectory,"Assets/Music")
 radiomusiccount = len([name for name in os.listdir(DIR) if os.path.isfile(os.path.join(DIR, name))])
+
+# Automatically set Google Environment var with API Key based on platform (Win and Mac untested)
+if str(platform.system()) == "Linux":
+    os.system('export GOOGLE_APPLICATION_CREDENTIALS="' + str(maindirectory).replace(" ","\ ") + '/GoogleAPIKey.json"')
+elif str(platform.system()) == "Darwin":
+    os.system('export GOOGLE_APPLICATION_CREDENTIALS="' + str(maindirectory) + '/GoogleAPIKey.json"')
+# elif str(platform.system()) == "Windows":
+#     os.system('export GOOGLE_APPLICATION_CREDENTIALS="' + str(maindirectory) + '\GoogleAPIKey.json"')
+
+# Google Cloud TTS Function to Generate Wavenet Samples
+def text_to_wav(text):
+    # If the current time is in the early morning, save money by switching to Standard voice
+    timeobject = datetime.now()
+    currenttime = int(timeobject.strftime("%H"))
+    if currenttime >= 0 and currenttime < 8:
+        voice_name = "en-US-Standard-J"
+    else:
+        voice_name = "en-US-Wavenet-J"
+    
+    # Uncomment the following line to force Standard voice
+    voice_name = "en-US-Standard-J"
+
+    language_code = "-".join(voice_name.split("-")[:2])
+    text_input = texttospeech.SynthesisInput(text=text)
+    voice_params = texttospeech.VoiceSelectionParams(
+        language_code=language_code, name=voice_name
+    )
+    audio_config = texttospeech.AudioConfig(
+        audio_encoding=texttospeech.AudioEncoding.LINEAR16,
+        speaking_rate=1.05
+    )
+
+    client = texttospeech.TextToSpeechClient()
+    response = client.synthesize_speech(
+        input=text_input, voice=voice_params, audio_config=audio_config
+    )
+
+    filename = f"{language_code}.wav"
+    with open(str(maindirectory) + "/" + filename, "wb") as out:
+        out.write(response.audio_content)
+
+    sound = mixer.Sound(str(maindirectory) + "/en-US.wav")
+    sound.set_volume(1)
+    channel = sound.play()
+    while channel.get_busy():
+        pygame.time.wait(100)
 
 # Custom function to synthesize audio in the background [followed by speakrichtext function]
 def preparevoice(message):
@@ -122,22 +176,25 @@ def speaktext(message):
         with open(str(maindirectory) + "/Output.txt","w") as fileoutput:
             fileoutput.write("\n" + str(message))
             fileoutput.close()
-    # If platform is Mac OS or Windows, use system TTS
-    if str(platform.system()) == "Darwin" or str(platform.system()) == "Windows":
-        engine.say(str(message)) # System TTS [1/2]
-        engine.runAndWait() # System TTS [2/2]
-    else: # On Linux, use MBROLA through espeak
-        os.system("espeak -p 50 -s 165 -v mb/mb-us2 \"" + str(message).replace("'","").replace("\"","") + "\"") # MBROLA TTS
-        # engine.say(str(message)) # System TTS [1/2]
-        # engine.runAndWait() # System TTS [2/2]
+    if wavenet == True:
+        text_to_wav(str(message))
+    else:
+        # If platform is Mac OS or Windows, use system TTS
+        if str(platform.system()) == "Darwin" or str(platform.system()) == "Windows":
+            engine.say(str(message)) # System TTS [1/2]
+            engine.runAndWait() # System TTS [2/2]
+        else: # On Linux, use MBROLA through espeak
+            os.system("espeak -p 50 -s 165 -v mb/mb-us2 \"" + str(message).replace("'","").replace("\"","") + "\"") # MBROLA TTS
+            # engine.say(str(message)) # System TTS [1/2]
+            # engine.runAndWait() # System TTS [2/2]
 
 # Tell user that the program is starting
 speaktext("The radio will be back online in a moment!")
 
 # Start a random radio "waiting" song
-sound = mixer.Sound(str(maindirectory) + "/Assets/Music/" + str(random.randint(1,radiomusiccount)) + ".WAV")
-sound.set_volume(0.4)
-channel = sound.play()
+waitingsound = mixer.Sound(str(maindirectory) + "/Assets/Music/" + str(random.randint(1,radiomusiccount)) + ".WAV")
+waitingsound.set_volume(0.4)
+channel = waitingsound.play()
 
 # State any errors/warnings to user
 if weatherkey == "":
@@ -535,7 +592,8 @@ if advancedspeech == True:
     preparevoice(longspeechstring) # Trigger voice synthesis engine for generation
     speakrichtext(longspeechstring) # Trigger voice synthesis engine for playback
 
-sound.stop()
+# Stop the waiting sound
+waitingsound.stop()
 
 # Loop through songs, announcements, and other commentary forever
 while True:
@@ -553,6 +611,11 @@ while True:
                 while channel.get_busy():
                     pygame.time.wait(100)
             
+            # Play the background waiting sound while the announcer speaks
+            waitingsound = mixer.Sound(str(maindirectory) + "/Assets/Music/" + str(random.randint(1,radiomusiccount)) + ".WAV")
+            waitingsound.set_volume(0.3)
+            channel = waitingsound.play()
+
             # Play the synthesized voice if enabled, else use system TTS
             if advancedspeech == True:
                 sound = mixer.Sound(str(maindirectory) + "/Output.wav")
@@ -562,6 +625,9 @@ while True:
                     pygame.time.wait(100)
             else:
                 speaktext(longspeechstring)
+
+            # Stop the waiting sound
+            waitingsound.stop()
 
             # Play random radio sound after speaking (if file exists)
             if radiosoundcount >= 1:
@@ -776,9 +842,15 @@ while True:
             while channel.get_busy():
                 pygame.time.wait(100)
         
+        # Play the background waiting sound while the announcer speaks
+            waitingsound = mixer.Sound(str(maindirectory) + "/Assets/Music/" + str(random.randint(1,radiomusiccount)) + ".WAV")
+            waitingsound.set_volume(0.3)
+            channel = waitingsound.play()
+
         # If the time is midnight (if stored weekday info doesn't match current weekday info), restart the script to gather new playlist info
         if savedweekday != datetime.today().weekday():
             speaktext("It's midnight. I'm switching to a new playlist. Please wait.")
+            waitingsound.stop()
             os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
         
         # Compared the savedtime VAR to the current time text. If mismatch, restart the station with a new playlist
@@ -803,6 +875,7 @@ while True:
         # If mismatch, restart the station
         if savedtimecomparison != savedtime:
             speaktext("I'm switching to a new playlist. Please wait.")
+            waitingsound.stop()
             os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
 
         # Play the synthesized speech, or use fallback TTS if not ready
@@ -810,6 +883,9 @@ while True:
             speakrichtext(longspeechstring)
         else:
             speaktext(longspeechstring)
+
+        # Stop the waiting sound
+        waitingsound.stop()
 
         # Play the PSA if triggered
         if playpsa == True:
@@ -856,7 +932,8 @@ while True:
             channel = sound.play()
             while channel.get_busy():
                 pygame.time.wait(100)
-    except (RuntimeError, TypeError, NameError, OSError):
+    except (RuntimeError, TypeError, NameError, OSError, KeyError, IndexError, LookupError):
         # Say that something has gone wrong
         speaktext("It looks like that song isn't available. Please wait while I restart the station.")
         os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
+        # os.execv(sys.executable, ['python3'] + sys.argv + ["skipintro"]) # Restart the script by issuing a terminal command
