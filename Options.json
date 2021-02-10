@@ -1,0 +1,14 @@
+{
+  "playintro": true,
+  "advancedspeech": false,
+  "defaultpsachance": 8,
+  "defaultweatherchance": 10,
+  "defaultwelcomechance": 8,
+  "defaultweekdaychance": 8,
+  "defaulttimechance": 8,
+  "city_name": "Auburn Hills",
+  "overrideplaylist": "",
+  "writeoutput": false,
+  "writesonginfo": false,
+  "psaplaylisturl": "https://www.youtube.com/playlist?list=PLUJZiQIClkwdxdCVag0ffmjPNdnHDlb02"
+}
