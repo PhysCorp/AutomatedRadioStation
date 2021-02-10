@@ -17,6 +17,7 @@ from selenium.webdriver import FirefoxOptions # Scrape websites for information 
 import requests, json # Gather weather info from Openweathermap
 import sys # Used to restart the script at midnight
 import platform # Identify which OS the script is running on
+import json # Parse JSON files for API and playlist info
 # from textgenrnn import textgenrnn # AI-based text generation
 
 # Setup AI text generation
@@ -35,37 +36,47 @@ random.seed(a=None, version=2) # Set random seed based on current time
 mixer = pygame.mixer
 mixer.init()
 
-# API Keys
-weatherkey = "" # API key for Openweathermap
-pafyAPIkey = "" # API key for YouTube video requests
+# Determine main program directory
+maindirectory = os.path.dirname(os.path.abspath(__file__)) # The absolute path to this file
+
+# Retrieve options from JSON file
+with open(str(maindirectory) + '/Options.json', 'r') as json_file:
+    options_dict = json.load(json_file)
 
 # Options
-playintro = True # Play the radio show intro on launch
-advancedspeech = False # Use AI-based speech generation service
-defaultpsachance = 8 # Likelihood of playing a PSA [1/[x] chance]
-defaultweatherchance = 10 # Likelihood of mentioning the weather [1/[x] chance]
-defaultwelcomechance = 8 # Likelihood of mentioning the welcome message again [1/[x] chance]
-defaultweekdaychance = 8 # Likelihood of mentioning the weekday again [1/[x] chance]
-defaulttimechance = 8 # Likelihood of mentioning the time [1/[x] chance]
-city_name = "Auburn Hills" # Name of city for weather info
-overrideplaylist = "" # Override YouTube playlist URL for music
-writeoutput = False # Whether or not to print the announcer subtitles to Output.txt
-writesonginfo = False # Whether or not to print the song title to SongInfo.txt
-psaplaylisturl = "https://www.youtube.com/playlist?list=PLUJZiQIClkwdxdCVag0ffmjPNdnHDlb02" # YouTube playlist URL for PSAs
+playintro = options_dict["playintro"] # Play the radio show intro on launch
+advancedspeech = options_dict["advancedspeech"] # Use AI-based speech generation service
+defaultpsachance = options_dict["defaultpsachance"] # Likelihood of playing a PSA [1/[x] chance]
+defaultweatherchance = options_dict["defaultweatherchance"] # Likelihood of mentioning the weather [1/[x] chance]
+defaultwelcomechance = options_dict["defaultwelcomechance"] # Likelihood of mentioning the welcome message again [1/[x] chance]
+defaultweekdaychance = options_dict["defaultweekdaychance"] # Likelihood of mentioning the weekday again [1/[x] chance]
+defaulttimechance = options_dict["defaulttimechance"] # Likelihood of mentioning the time [1/[x] chance]
+city_name = options_dict["city_name"] # Name of city for weather info
+overrideplaylist = options_dict["overrideplaylist"] # Override YouTube playlist URL for music
+writeoutput = options_dict["writeoutput"] # Whether or not to print the announcer subtitles to Output.txt
+writesonginfo = options_dict["writesonginfo"] # Whether or not to print the song title to SongInfo.txt
+psaplaylisturl = options_dict["psaplaylisturl"] # YouTube playlist URL for PSAs
 
-# Declare Variables
+# Declare System Variables
 longspeechstring = "" # Used to append multiple strings before synthesizing audio
 playpsa = False # Bool value for whether or not a PSA will play immediately following a song
 listPlayedSongs = [] # List stores all song numbers that have already been played
 potentialsong = 1 # The index of the song to be played
-maindirectory = os.path.dirname(os.path.abspath(__file__)) # The absolute path to this file
 psachance = defaultpsachance # Likelihood of playing a PSA [1/[x] chance]
 weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[x] chance]
 welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
 timechance = defaulttimechance # Likelihood of mentioning the time [1/[x] chance]
-versioninfo = "21.2.5" # Script version number [YEAR.MONTH.BUILDNUM]
+versioninfo = "21.2.6" # Script version number [YEAR.MONTH.BUILDNUM]
 savedtime = "" # The text version of the time. Used to compare to actual time and determine when to start the next playlist
+
+# Retrieve API keys from JSON file
+with open(str(maindirectory) + '/APIKeys.json', 'r') as json_file:
+    APIkeys_dict = json.load(json_file)
+
+# API Keys
+weatherkey = str(APIkeys_dict["Openweathermap"]) # API key for Openweathermap
+pafyAPIkey = str(APIkeys_dict["YouTube"]) # API key for YouTube video requests
 
 # Determine the amount of random radio sounds available
 DIR= os.path.join(maindirectory,"Assets/SoundEffects")
@@ -597,8 +608,8 @@ while True:
         # Download the next song with pafy module
         url = musicplaylist[songselectionint]
         pafy.set_api_key(pafyAPIkey)
-        video = pafy.new(url)
-        best = video.getbest()
+        video = pafy.new(url, basic=False, gdata=False, size=False, callback=None, ydl_opts=None)
+        best = video.getbestaudio()
         playurl = best.url
 
         # Play the downloaded song in headless VLC
@@ -810,8 +821,8 @@ while True:
                     # Play PSA using headless VLC
                     url = psaplaylist[random.randint(1,len(psaplaylist)-1)]
                     pafy.set_api_key(pafyAPIkey)
-                    video = pafy.new(url)
-                    best = video.getbest()
+                    video = pafy.new(url, basic=False, gdata=False, size=False, callback=None, ydl_opts=None)
+                    best = video.getbestaudio()
                     playurl = best.url
 
                     Instance = vlc.Instance("--vout=dummy")
