@@ -5,3 +5,4 @@ pygame
 selenium
 requests
 youtube-dl
+google-cloud-texttospeech
