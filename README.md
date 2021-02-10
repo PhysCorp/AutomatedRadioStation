@@ -42,7 +42,7 @@ Prereq: Clone the repo. Terminal: "git clone https://github.com/PhysCorp/Automat
 # Known Issue(s):
 - None ATM!
 
-# Licensing for live playback on my server:
+# License info for live playback on my server:
 Intro/Wait music from Jukedeck - create your own at http://jukedeck.com
 
 Rising Tide (faster) by Kevin MacLeod
