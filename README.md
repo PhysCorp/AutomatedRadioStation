@@ -40,7 +40,9 @@ Prereq: Clone the repo. Terminal: "git clone https://github.com/PhysCorp/Automat
 *Add more lines to either file to increase variety.
 
 # Known Issue(s):
-- None ATM!
+1) You may experience issues with Pafy if you make too many YouTube API calls within 24 hours. The issue will resolve itself automatically within 24 hours.
+2) The program currently does not set GOOGLE_APPLICATION_CREDENTIALS var automatically. You must manually specify the path to Google Cloud JSON file to use Wavenet voices.
+3) Reading the time aloud will result in a delay according to the length of the song. This will be fixed shortly.
 
 # License info for live playback on my server:
 Intro/Wait music from Jukedeck - create your own at http://jukedeck.com
