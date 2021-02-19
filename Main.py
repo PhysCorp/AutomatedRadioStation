@@ -95,7 +95,7 @@ weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[
 welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
 timechance = defaulttimechance # Likelihood of mentioning the time [1/[x] chance]
-versioninfo = "21.2.8" # Script version number [YEAR.MONTH.BUILDNUM]
+versioninfo = "21.2.9" # Script version number [YEAR.MONTH.BUILDNUM]
 savedtime = "" # The text version of the time. Used to compare to actual time and determine when to start the next playlist
 
 # Override radio intro if specified by script args
@@ -285,9 +285,16 @@ for video in videos:
     link=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("href")
     longname=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("title")
     end=longname.find("(")
-    longname_concat=longname[:end]
+    if end == -1:
+        longname_concat = longname
+    else:
+        longname_concat = longname[:end]
+    
     end=longname_concat.find("[")
-    name = longname_concat[:end].title()
+    if end == -1:
+        name = longname_concat.title()
+    else:
+        name = longname_concat[:end].title()
     print(f"Retrieved \"{name}\"", end="\n")
     playlist.append(link)
     playlistnames.append(name)
