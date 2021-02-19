@@ -1,3 +1,26 @@
+# MIT License
+
+# Copyright (c) 2021 Matt Curtis
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+
 # Import Modules
 import random # Random number generation
 import pyttsx3 # Fallback text to speech
@@ -21,9 +44,12 @@ import json # Parse JSON files for API and playlist info
 # from textgenrnn import textgenrnn # AI-based text generation
 from google.cloud import texttospeech # [PAID] Google Cloud Text to Speech
 
+# Custom Modules
+from PlaylistSearch import Playlist # Set VARs for playlist URL, weekday text, etc
+
 # Setup AI text generation
 # textgen = textgenrnn()
-# print("\n[INFO] " + str(textgen.generate())) # Debug, print random AI-generated sentence to stdout
+# print("[INFO] " + str(textgen.generate()), end="\n\n") # Debug, print random AI-generated sentence to stdout
 
 # Init TTS engine
 engine = pyttsx3.init()
@@ -69,14 +95,14 @@ weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[
 welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
 timechance = defaulttimechance # Likelihood of mentioning the time [1/[x] chance]
-versioninfo = "21.2.7" # Script version number [YEAR.MONTH.BUILDNUM]
+versioninfo = "21.2.8" # Script version number [YEAR.MONTH.BUILDNUM]
 savedtime = "" # The text version of the time. Used to compare to actual time and determine when to start the next playlist
 
 # Override radio intro if specified by script args
 if len(sys.argv) > 1:
     if "skipintro" in sys.argv:
         playintro = False
-        print("\n[INFO] Script arguments specified playintro to False! Skipping radio intro sequence.\n")
+        print("[INFO] Script arguments specified playintro to False! Skipping radio intro sequence.", end="\n\n")
 
 # Retrieve API keys from JSON file
 with open(str(maindirectory) + '/APIKeys.json', 'r') as json_file:
@@ -95,11 +121,12 @@ DIR= os.path.join(maindirectory,"Assets/Music")
 radiomusiccount = len([name for name in os.listdir(DIR) if os.path.isfile(os.path.join(DIR, name))])
 
 # Automatically set Google Environment var with API Key based on platform (Win and Mac untested)
-if str(platform.system()) == "Linux":
-    os.system('export GOOGLE_APPLICATION_CREDENTIALS="' + str(maindirectory).replace(" ","\ ") + '/GoogleAPIKey.json"')
-elif str(platform.system()) == "Darwin":
-    os.system('export GOOGLE_APPLICATION_CREDENTIALS="' + str(maindirectory) + '/GoogleAPIKey.json"')
-# elif str(platform.system()) == "Windows":
+# [ THIS IS AUTOMATICALLY OVERRIDDEN BY STARTRADIO SCRIPT ]
+# if str(platform.system()) == "Linux":
+#     os.system('export GOOGLE_APPLICATION_CREDENTIALS="' + str(maindirectory).replace(" ","\ ") + '/GoogleAPIKey.json"')
+# elif str(platform.system()) == "Darwin":
+#     os.system('export GOOGLE_APPLICATION_CREDENTIALS="' + str(maindirectory) + '/GoogleAPIKey.json"')
+# # elif str(platform.system()) == "Windows":
 #     os.system('export GOOGLE_APPLICATION_CREDENTIALS="' + str(maindirectory) + '\GoogleAPIKey.json"')
 
 # Google Cloud TTS Function to Generate Wavenet Samples
@@ -108,12 +135,12 @@ def text_to_wav(text):
     timeobject = datetime.now()
     currenttime = int(timeobject.strftime("%H"))
     if currenttime >= 0 and currenttime < 8:
-        voice_name = "en-US-Standard-J"
+        voice_name = "en-US-Standard-C"
     else:
-        voice_name = "en-US-Wavenet-J"
+        voice_name = "en-US-Wavenet-C"
     
     # Uncomment the following line to force Standard voice
-    voice_name = "en-US-Standard-J"
+    # voice_name = "en-US-Standard-C"
 
     language_code = "-".join(voice_name.split("-")[:2])
     text_input = texttospeech.SynthesisInput(text=text)
@@ -122,7 +149,7 @@ def text_to_wav(text):
     )
     audio_config = texttospeech.AudioConfig(
         audio_encoding=texttospeech.AudioEncoding.LINEAR16,
-        speaking_rate=1.05
+        speaking_rate=1.10
     )
 
     client = texttospeech.TextToSpeechClient()
@@ -170,7 +197,7 @@ def speakrichtext(message):
 
 # Custom function to just speak text with system TTS
 def speaktext(message):
-    print("\n[SPEECH] " + "\"" + str(message) + "\"") # Print the message contents to stdout
+    print("[SPEECH] " + "\"" + str(message) + "\"", end="\n\n") # Print the message contents to stdout
     # If enabled, write message contents to text file for use in OBS Studio
     if writeoutput == True:
         with open(str(maindirectory) + "/Output.txt","w") as fileoutput:
@@ -198,7 +225,7 @@ channel = waitingsound.play()
 
 # State any errors/warnings to user
 if weatherkey == "":
-    print("\n[INFO] " + "You have not provided an Openweathermap API key. The API key is required to give weather info.")
+    print("[INFO] " + "You have not provided an Openweathermap API key. The API key is required to give weather info.", end="\n\n")
 
 # Custom function to remove unneccessary chars from YouTube video ID after "&"
 def vidstrip(playlist):
@@ -213,284 +240,31 @@ url = ""
 # Display time to stdout to let user verify if correct playlist is chosen.
 timeobject = datetime.now()
 currenttime = timeobject.strftime("%I:%M")
-print("\n[INFO] " + "The time is currently " + str(currenttime) + ".")
+print("[INFO] " + "The time is currently " + str(currenttime) + ".", end="\n\n")
 
 # Set the following VARs according to the current time, for use in the IF statements below
 timeobject = datetime.now()
 currenttime = int(timeobject.strftime("%H"))
 
-# Determine the weekday, then set the appropriate playlist URL and caption
-# Monday
-if datetime.today().weekday() == 0:
-    if currenttime >= 0 and currenttime < 8: # Early Morning [Monday]
-        url = "https://www.youtube.com/playlist?list=PLjzeyhEA84sQKuXp-rpM1dFuL2aQM_a3S" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Monday. - Early Morning") # Print current weekday to stdout
-        weekdaytext = "Well, it's Monday. Why are you up so early? We're playing rock music all day! Let's start off your early morning with some blues music." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Early Morning"
-
-    if currenttime >= 8 and currenttime < 12: # Morning [Monday]
-        url = "https://www.youtube.com/playlist?list=PLOci2rRb5g3iUxFh_olD0dWGpzWPwdlOi" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Monday - Morning") # Print current weekday to stdout
-        weekdaytext = "Well, it's Monday morning. We're playing rock music all day! Let's get your day started with some punk rock." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Morning"
-
-    if currenttime >= 12 and currenttime < 16: # Afternoon [Monday]
-        url = "https://www.youtube.com/playlist?list=PLGBuKfnErZlD_VXiQ8dkn6wdEYHbC3u0i" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Monday - Afternoon") # Print current weekday to stdout
-        weekdaytext = "Hope you're having a solid Monday afternoon. We're playing rock music all day! Let's get the blood pumping with some heavy metal." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Afternoon"
-
-    if currenttime >= 16 and currenttime < 20: # Evening [Monday]
-        url = "https://www.youtube.com/playlist?list=PLNxOe-buLm6cz8UQ-hyG1nm3RTNBUBv3K" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Monday - Evening") # Print current weekday to stdout
-        weekdaytext = "It's Monday evening. We're playing rock music all day! Here's some classics that you should be familiar with." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Evening"
-    
-    if currenttime >= 20 and currenttime < 24: # Late Night [Monday]
-        url = "https://www.youtube.com/playlist?list=PL4033C6D21D7D28AC" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Monday - Late Night") # Print current weekday to stdout
-        weekdaytext = "It's Monday night. Let's end the day the right way with some death metal." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Late Night"
-
-# Tuesday
-elif datetime.today().weekday() == 1:
-    if currenttime >= 0 and currenttime < 8: # Early Morning [Tuesday]
-        url = "https://www.youtube.com/playlist?list=PLwIEpqpG3Tr8aI2HwnT1YwNtDMVKf8KUO" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Tuesday - Early Morning") # Print current weekday to stdout
-        weekdaytext = "It's officially Tuesday. Today, we're focusing on comedy, parodies, and generally weird music! Let's start with some comedy rock." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Early Morning"
-
-    if currenttime >= 8 and currenttime < 12: # Morning [Tuesday]
-        url = "https://www.youtube.com/playlist?list=PL7IiPgV2w_VZn8EgvZR8ohux9A5uup91n" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Tuesday - Morning") # Print current weekday to stdout
-        weekdaytext = "Its Tuesday morning. Today, we're focusing on comedy, parodies, and generally weird music! Here's some messed up music with weird edits to get you going!" # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Morning"
-
-    if currenttime >= 12 and currenttime < 16: # Afternoon [Tuesday]
-        url = "https://www.youtube.com/playlist?list=PL4722096DA7FECEFD" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Tuesday - Afternoon") # Print current weekday to stdout
-        weekdaytext = "Its Tuesday afternoon. We're focusing on comedy, parodies, and generally weird music! Right now, you're listening to music parodies!" # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Afternoon"
-
-    if currenttime >= 16 and currenttime < 20: # Evening [Tuesday]
-        url = "https://www.youtube.com/playlist?list=PL0Oo37i-_yeSwK2GaYxQEAV0BsjGDM3a8" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Tuesday - Evening") # Print current weekday to stdout
-        weekdaytext = "Its Tuesday evening. We're focusing on comedy, parodies, and generally weird music! Let's listen to some medieval folk rock." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Evening"
-    
-    if currenttime >= 20 and currenttime < 24: # Late Night [Tuesday]
-        url = "https://www.youtube.com/playlist?list=PLhmtZUpTH9coZD4Y0XNID7tZFmLo1bytt" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Tuesday - Late Night") # Print current weekday to stdout
-        weekdaytext = "Its Tuesday night. Let's end the day of weird music with some horror country." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Late Night"
-
-# Wednesday
-elif datetime.today().weekday() == 2:
-    if currenttime >= 0 and currenttime < 8: # Early Morning [Wednesday]
-        url = "https://www.youtube.com/playlist?list=PLMC9KNkIncKtPzgY-5rmhvj7fax8fdxoj" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Wednesday - Early Morning") # Print current weekday to stdout
-        weekdaytext = "It's officially hump day. Today's theme is nostalgic music! Time for you to jam out to some recent pop hits." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Early Morning"
-
-    if currenttime >= 8 and currenttime < 12: # Morning [Wednesday]
-        url = "https://www.youtube.com/playlist?list=PL7IiPgV2w_VaEvjQ8YedFjlcGTbhCze9U" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Wednesday - Morning") # Print current weekday to stdout
-        weekdaytext = "It's the morning of hump day. Today's theme is nostalgic music! Let's get you started with some internet classics." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Morning"
-
-    if currenttime >= 12 and currenttime < 16: # Afternoon [Wednesday]
-        url = "https://www.youtube.com/playlist?list=PL7Q2ZklqtR8B_EAUfXt5tAZkxhCApfFkL" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Wednesday - Afternoon") # Print current weekday to stdout
-        weekdaytext = "It's Wednesday afternoon. You've made it over the hump of hump day! Today's theme is nostalgic music, and we're listening to music around 2010." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Afternoon"
-
-    if currenttime >= 16 and currenttime < 20: # Evening [Wednesday]
-        url = "https://www.youtube.com/playlist?list=PLpuDUpB0osJmZQ0a3n6imXirSu0QAZIqF" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Wednesday - Evening") # Print current weekday to stdout
-        weekdaytext = "It's Wednesday night. The theme is nostalgic music. We'll go further back in time and listen to music from the 2000s." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Evening"
-    
-    if currenttime >= 20 and currenttime < 24: # Late Night [Wednesday]
-        url = "https://www.youtube.com/playlist?list=PLetgZKHHaF-Zq1Abh-ZGC4liPd_CV3Uo4" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Wednesday - Late Night") # Print current weekday to stdout
-        weekdaytext = "It's Wednesday night. Let's end the day with some hip hop and rap." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Late Night"
-
-# Thursday
-elif datetime.today().weekday() == 3:
-    if currenttime >= 0 and currenttime < 8: # Early Morning [Thursday]
-        url = "https://www.youtube.com/playlist?list=PL4QNnZJr8sRNKjKzArmzTBAlNYBDN2h-J" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Thursday - Early Morning") # Print current weekday to stdout
-        weekdaytext = "It's now Thursday morning, and early at that. Today we're focusing on music from around the world. Let's start with some K pop." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Early Morning"
-
-    if currenttime >= 8 and currenttime < 12: # Morning [Thursday]
-        url = "https://www.youtube.com/playlist?list=PLV9du90-nOngPg_V4By29gvrovqAguGuN" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Thursday - Morning") # Print current weekday to stdout
-        weekdaytext = "It's Thursday morning. Today we're focusing on music from around the world. You're about to hear country anthems and world propaganda." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Morning"
-
-    if currenttime >= 12 and currenttime < 16: # Afternoon [Thursday]
-        url = "https://www.youtube.com/playlist?list=PLZ6V4Rz0ltCP6yVKO390YPqqfjWsgrq_n" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Thursday - Afternoon") # Print current weekday to stdout
-        weekdaytext = "Thursday afternoon. We're focusing on music from around the world. Let's take a trip to India." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Afternoon"
-
-    if currenttime >= 16 and currenttime < 20: # Evening [Thursday]
-        url = "https://www.youtube.com/playlist?list=PLX9U3Rv7Wy7Wbi3iV2uxFo8BOVHjIehUc" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Thursday - Evening") # Print current weekday to stdout
-        weekdaytext = "It's Thursday evening. We're focusing on music from around the world. Now, let's take a trip to Africa." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Evening"
-    
-    if currenttime >= 20 and currenttime < 24: # Late Night [Thursday]
-        url = "https://www.youtube.com/playlist?list=PLrZlOVu0fKqHo1ilGq8vYCuC7mUWej_nP" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Thursday - Late Night") # Print current weekday to stdout
-        weekdaytext = "It's Thursday night. Let's end our world music theme with some American patriotic music." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Late Night"
-
-# Friday
-elif datetime.today().weekday() == 4:
-    if currenttime >= 0 and currenttime < 8: # Early Morning [Friday]
-        url = "https://www.youtube.com/playlist?list=PLCD0445C57F2B7F41" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Friday - Early Morning") # Print current weekday to stdout
-        weekdaytext = "It's early Friday morning. Today's decade day! We'll start by listening to the best of the eighties." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Early Morning"
-
-    if currenttime >= 8 and currenttime < 12: # Morning [Friday]
-        url = "https://www.youtube.com/playlist?list=PLGBuKfnErZlAkaUUy57-mR97f8SBgMNHh" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Friday - Morning") # Print current weekday to stdout
-        weekdaytext = "Friday is here. Today's decade day! Next, we'll hear the best of the seventies." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Morning"
-
-    if currenttime >= 12 and currenttime < 16: # Afternoon [Friday]
-        url = "https://www.youtube.com/playlist?list=PLGBuKfnErZlCkRRgt06em8nbXvcV5Sae7" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Friday - Afternoon") # Print current weekday to stdout
-        weekdaytext = "It's Friday afternoon. Today's decade day! We're moving on to the best of the sixties." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Afternoon"
-
-    if currenttime >= 16 and currenttime < 20: # Evening [Friday]
-        url = "https://www.youtube.com/playlist?list=PLRZlMhcYkA2Fhwg-NxJewUIgm01o9fzwB" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Friday - Evening") # Print current weekday to stdout
-        weekdaytext = "It's Friday evening. Today's decade day! Let's listen to the best of the 40s!" # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Evening"
-    
-    if currenttime >= 20 and currenttime < 24: # Late Night [Friday]
-        url = "https://www.youtube.com/playlist?list=PLXRivw5Pd9qlM5efsL4c7js8teYFVy3Dk" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Friday - Late Night") # Print current weekday to stdout
-        weekdaytext = "It's Friday night. Let's end the day with music from the roaring twenties!" # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Late Night"
-
-# Saturday
-elif datetime.today().weekday() == 5:
-    if currenttime >= 0 and currenttime < 8: # Early Morning [Saturday]
-        url = "https://www.youtube.com/playlist?list=PLxvodScTx2RtAOoajGSu6ad4p8P8uXKQk" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Saturday - Early Morning") # Print current weekday to stdout
-        weekdaytext = "Today's Saturday, time to relax and have fun! We'll start the morning with some orchestral music." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Early Morning"
-
-    if currenttime >= 8 and currenttime < 12: # Morning [Saturday]
-        url = "https://www.youtube.com/playlist?list=PLrnb8c3hFJatjyJ-wFMuFGANNoo7-LZsG" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Saturday - Morning") # Print current weekday to stdout
-        weekdaytext = "Today's Saturday, time to relax and have fun! Let your morning begin with popular video game soundtracks." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Morning"
-
-    if currenttime >= 12 and currenttime < 16: # Afternoon [Saturday]
-        url = "https://www.youtube.com/playlist?list=PL4BrNFx1j7E5qDxSPIkeXgBqX0J7WaB2a" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Saturday - Afternoon") # Print current weekday to stdout
-        weekdaytext = "Today's Saturday, time to relax and have fun! Let's continue your afternoon with some film scores!" # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Afternoon"
-
-    if currenttime >= 16 and currenttime < 20: # Evening [Saturday]
-        url = "https://www.youtube.com/playlist?list=PL6rfTXx-6y2U9LPalxmyWb4Z9_YDomxfs" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Saturday - Evening") # Print current weekday to stdout
-        weekdaytext = "Today's Saturday, time to relax and have fun! Now that it's the evening, we'll listen to songs in musical theater." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Evening"
-    
-    if currenttime >= 20 and currenttime < 24: # Late Night [Saturday]
-        url = "https://www.youtube.com/playlist?list=PLbcjjn493-S_DcwEVTPkVRz5zZQSo3hjE" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Saturday - Late Night") # Print current weekday to stdout
-        weekdaytext = "It's Saturday night, still time to relax and have fun! We'll end the day with some pirate metal." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Late Night"
-
-# Sunday
-elif datetime.today().weekday() == 6:
-    if currenttime >= 0 and currenttime < 8: # Early Morning [Sunday]
-        url = "https://www.youtube.com/playlist?list=PLWtAfhR9YD1wdKOTDqCFYoFUcThRCfAjp" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Sunday - Early Morning") # Print current weekday to stdout
-        weekdaytext = "It's Sunday. We're serving jazz all day baby. Smooth jazz will be deployed in 3, 2, 1." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Early Morning"
-
-    if currenttime >= 8 and currenttime < 12: # Morning [Sunday]
-        url = "https://www.youtube.com/playlist?list=PL8F6B0753B2CCA128" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Sunday - Morning") # Print current weekday to stdout
-        weekdaytext = "It's Sunday morning. We're serving jazz all day baby. Let's start your morning by listening to important figures in jazz." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Morning"
-
-    if currenttime >= 12 and currenttime < 16: # Afternoon [Sunday]
-        url = "https://www.youtube.com/playlist?list=PLDC827E741DA933F0" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Sunday - Afternoon") # Print current weekday to stdout
-        weekdaytext = "It's Sunday afternoon. We're serving jazz all day baby. Time to get moving to some big band music." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Afternoon"
-
-    if currenttime >= 16 and currenttime < 20: # Evening [Sunday]
-        url = "https://www.youtube.com/playlist?list=PLk-_AvR22RueziRgt5GVuirih223y1UNJ" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Sunday - Evening") # Print current weekday to stdout
-        weekdaytext = "It's Sunday evening. We're serving jazz all day baby. Let's cool down to some bossa nova." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Evening"
-    
-    if currenttime >= 20 and currenttime < 24: # Late Night [Sunday]
-        url = "https://www.youtube.com/playlist?list=PL3O5lr1JOzLe6CXisC7PSbveY6IBLxdlg" # Set playlist URL
-        print("\n[INFO] " + "Using playlist for Sunday - Late Night") # Print current weekday to stdout
-        weekdaytext = "It's Sunday night. Let's end the day with some jazz fusion." # Set speech text according to weekday
-        savedweekday = datetime.today().weekday()
-        savedtime = "Late Night"
+# Set the appropriate playlist according to the weekday using custom PlaylistSearch function w/ classes
+playlistselection = Playlist(datetime.today().weekday(), currenttime)
+url = playlistselection.get_URL()
+savedweekday = playlistselection.get_savedweekday()
+savedtime = playlistselection.get_savedtime()
+weekdaytext = playlistselection.get_weekdaytext()
 
 # If the playlist URL is still blank, warn the user and use a fallback playlist
 if url == "":
     url = "https://www.youtube.com/playlist?list=PLHL1i3oc4p0o76QOZ_BLZwjDb1x21azmC"
-    print("\n[INFO] " + "You didn't specify a music playlist for today's date! Using fallback playlist.")
+    print("[INFO] " + "You didn't specify a music playlist for today's date! Using fallback playlist.", end="\n\n")
 
 # If specified, override the weekday playlist with something else
 if overrideplaylist:
     url = overrideplaylist
-    print("\n[INFO] " + "Override enabled for playlist. Using " + str(url) + ".")
+    print("[INFO] " + "Override enabled for playlist. Using " + str(url) + ".", end="\n\n")
 
 # Print steps to stdout
-print("\n[INFO] " + "Scraping music playlist ...")
+print("[INFO] " + "Scraping music playlist ...", end="\n\n")
 
 # Set Firefox to run in headless mode
 opts = FirefoxOptions()
@@ -509,7 +283,12 @@ videos=driver.find_elements_by_class_name('style-scope ytd-playlist-video-render
 # Scrape each video into two lists, video URLs and video titles respectively
 for video in videos:
     link=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("href")
-    name=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("title")
+    longname=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("title")
+    end=longname.find("(")
+    longname_concat=longname[:end]
+    end=longname_concat.find("[")
+    name = longname_concat[:end].title()
+    print(f"Retrieved \"{name}\"", end="\n")
     playlist.append(link)
     playlistnames.append(name)
 
@@ -517,7 +296,7 @@ musicplaylist=vidstrip(playlist) # Strip unneccessary chars from list
 driver.close() # Close the web rendering engine
 
 # Print message to stdout
-print("\n[INFO] " + "Finished downloading music playlist.")
+print("[INFO] " + "Finished downloading music playlist.", end="\n\n")
 
 # Next, scrape the PSA playlist (if playlist URL is specified)
 if psaplaylisturl != "":
@@ -525,7 +304,7 @@ if psaplaylisturl != "":
     url = psaplaylisturl
 
     # Print steps to stdout
-    print("\n[INFO] " + "Scraping PSA playlist ...")
+    print("[INFO] " + "Scraping PSA playlist ...", end="\n\n")
 
     # Run Firefox in automated headless mode
     opts = FirefoxOptions()
@@ -543,10 +322,10 @@ if psaplaylisturl != "":
     driver.close() # Close the web rendering engine
 else:
     # Print missing playlist info message to stdout
-    print("\n[INFO] " + "PSA playlist URL has not been set. The station will not play PSAs.")
+    print("[INFO] " + "PSA playlist URL has not been set. The station will not play PSAs.", end="\n\n")
 
 # Print completion message to stdout
-print("\n[INFO] " + "Finished downloading PSA playlist. Starting radio ...")
+print("[INFO] " + "Finished downloading PSA playlist. Starting radio ...", end="\n\n")
 
 # Read and store each external speech script into memory
 # (Each line in the textfile represents a different index in the list)
@@ -581,7 +360,7 @@ if not overrideplaylist:
 
 # Add a random variation of the "Intro Text Short" speech to longspeechstring var & include the version number
 longspeechstring += " " + str(speechIntroTextShort[random.randint(0,len(speechIntroTextShort)-1)])
-longspeechstring += " Version " + str(versioninfo) + "."
+# longspeechstring += " Version " + str(versioninfo) + "."
 
 # Add a random variation of the "First Run Prompts" speech to longspeechstring var
 longspeechstring += " " + str(speechFirstrunPrompts[random.randint(0,len(speechFirstrunPrompts)-1)])
@@ -613,7 +392,7 @@ while True:
             
             # Play the background waiting sound while the announcer speaks
             waitingsound = mixer.Sound(str(maindirectory) + "/Assets/Music/" + str(random.randint(1,radiomusiccount)) + ".WAV")
-            waitingsound.set_volume(0.3)
+            waitingsound.set_volume(0.2)
             channel = waitingsound.play()
 
             # Play the synthesized voice if enabled, else use system TTS
@@ -645,8 +424,8 @@ while True:
                 potentialsong = random.randint(1,len(musicplaylist)-1) # Randomly select a new song from the playlist
             listPlayedSongs.append(potentialsong) # Add the song index to the list of played songs
             songselectionint = potentialsong # Set the next song to the one that was randomly chosen
-            print("\n[INFO] " + "List of completed song indexes:\n\t" + str(listPlayedSongs)) # Show list of played song numbers
-            print("\n[INFO] " + "Likelihood VARs:\n\tPSA: [1/" + str(psachance) + "]\tWeather: [1/" + str(weatherchance) + "]\tWelcomeMessage: [1/" + str(welcomechance) + "]\tWeekdayMessage: [1/" + str(weekdaychance) + "]\tTime: [1/" + str(timechance) + "]\n") # Show chance VARs
+            print("[INFO] " + "List of completed song indexes:\n\t" + str(listPlayedSongs), end="\n\n") # Show list of played song numbers
+            print("[INFO] " + "Likelihood VARs:\n\tPSA: [1/" + str(psachance) + "]\tWeather: [1/" + str(weatherchance) + "]\tWelcomeMessage: [1/" + str(welcomechance) + "]\tWeekdayMessage: [1/" + str(weekdaychance) + "]\tTime: [1/" + str(timechance) + "]", end="\n\n") # Show chance VARs
 
             longspeechstring = "" # Clear the longspeechstring var
             if advancedspeech: # If advanced speech is enabled,
@@ -695,7 +474,7 @@ while True:
 
         # Listening to PhysCorp's Automated Station & Version Info
         longspeechstring += " " + str(speechIntroTextShort[random.randint(0,len(speechIntroTextShort)-1)])
-        longspeechstring += " Version " + str(versioninfo) + "."
+        # longspeechstring += " Version " + str(versioninfo) + "."
 
         # # Chance to mention the time
         # if random.randint(0, timechance) == 1:
@@ -737,7 +516,7 @@ while True:
             # If blank, set city to Auburn Hills and print info to stdout
             if city_name == "":
                 city_name = "Auburn Hills"
-                print("\n[INFO] " + "A city name has not been set. Using Auburn Hills.")
+                print("[INFO] " + "A city name has not been set. Using Auburn Hills.", end="\n\n")
 
             # complete_url variable to store 
             # complete url address 
@@ -793,8 +572,8 @@ while True:
             potentialsong = random.randint(1,len(musicplaylist)-1) # Randomly select a new song from the playlist
         listPlayedSongs.append(potentialsong) # Add the song index to the list of played songs
         songselectionint = potentialsong # Set the next song to the one that was randomly chosen
-        print("\n[INFO] " + "List of completed song indexes:\n\t" + str(listPlayedSongs)) # Show list of played song numbers
-        print("\n[INFO] " + "Likelihood VARs:\n\tPSA: [1/" + str(psachance) + "]\tWeather: [1/" + str(weatherchance) + "]\tWelcomeMessage: [1/" + str(welcomechance) + "]\tWeekdayMessage: [1/" + str(weekdaychance) + "]\tTime: [1/" + str(timechance) + "]\n") # Show chance VARs
+        print("[INFO] " + "List of completed song indexes:\n\t" + str(listPlayedSongs), end="\n\n") # Show list of played song numbers
+        print("[INFO] " + "Likelihood VARs:\n\tPSA: [1/" + str(psachance) + "]\tWeather: [1/" + str(weatherchance) + "]\tWelcomeMessage: [1/" + str(welcomechance) + "]\tWeekdayMessage: [1/" + str(weekdaychance) + "]\tTime: [1/" + str(timechance) + "]", end="\n\n") # Show chance VARs
         
         # If the playlist isn't overridden, chance to add the weekday text to longspeechstring var
         if not overrideplaylist:
@@ -844,7 +623,7 @@ while True:
         
         # Play the background waiting sound while the announcer speaks
             waitingsound = mixer.Sound(str(maindirectory) + "/Assets/Music/" + str(random.randint(1,radiomusiccount)) + ".WAV")
-            waitingsound.set_volume(0.3)
+            waitingsound.set_volume(0.2)
             channel = waitingsound.play()
 
         # If the time is midnight (if stored weekday info doesn't match current weekday info), restart the script to gather new playlist info
@@ -934,6 +713,8 @@ while True:
                 pygame.time.wait(100)
     except (RuntimeError, TypeError, NameError, OSError, KeyError, IndexError, LookupError):
         # Say that something has gone wrong
-        speaktext("It looks like that song isn't available. Please wait while I restart the station.")
-        os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
-        # os.execv(sys.executable, ['python3'] + sys.argv + ["skipintro"]) # Restart the script by issuing a terminal command
+        speaktext("It looks like that song isn't available. Please wait while I find another song.")
+        playintro = True # Failsafe, run through intro again
+        pass
+        # os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
+        # os.execv(sys.executable, ['python3'] + sys.argv + ["skipintro"]) # Restart the script by issuing a terminal command, skipping the intro
