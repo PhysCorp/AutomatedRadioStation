@@ -95,7 +95,7 @@ weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[
 welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
 timechance = defaulttimechance # Likelihood of mentioning the time [1/[x] chance]
-versioninfo = "21.2.9" # Script version number [YEAR.MONTH.BUILDNUM]
+versioninfo = "21.2.10" # Script version number [YEAR.MONTH.BUILDNUM]
 savedtime = "" # The text version of the time. Used to compare to actual time and determine when to start the next playlist
 
 # Override radio intro if specified by script args
@@ -135,12 +135,12 @@ def text_to_wav(text):
     timeobject = datetime.now()
     currenttime = int(timeobject.strftime("%H"))
     if currenttime >= 0 and currenttime < 8:
-        voice_name = "en-US-Standard-C"
+        voice_name = "en-US-Standard-D"
     else:
-        voice_name = "en-US-Wavenet-C"
+        voice_name = "en-US-Wavenet-D"
     
     # Uncomment the following line to force Standard voice
-    # voice_name = "en-US-Standard-C"
+    # voice_name = "en-US-Standard-D"
 
     language_code = "-".join(voice_name.split("-")[:2])
     text_input = texttospeech.SynthesisInput(text=text)
@@ -149,7 +149,8 @@ def text_to_wav(text):
     )
     audio_config = texttospeech.AudioConfig(
         audio_encoding=texttospeech.AudioEncoding.LINEAR16,
-        speaking_rate=1.10
+        speaking_rate=1.10,
+        pitch=-5
     )
 
     client = texttospeech.TextToSpeechClient()
