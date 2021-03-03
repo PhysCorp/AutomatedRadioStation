@@ -3,7 +3,7 @@
 # AutomatedRadioStation
 A Radio Host that's Entirely Automated!
 
-# Listen Now [LIVE]:
+# Listen Now [LIVE] (Explicit):
 http://listen.physcorp.com/
 
 # What is it?
@@ -17,9 +17,6 @@ This software is built with Python in Visual Studio Code. The program scrapes a 
 This program requires that you have the following installed, as well as all the dependencies listed in requirements.txt:
 firefox, espeak, python3-venv, firefox-geckodriver, mbrola, mbrola-us2, mbrola-us3
 
-Advanced speech synthesis requires Real-Time-Voice-Cloning by blue-fish
-https://github.com/blue-fish/Real-Time-Voice-Cloning
-
 # Install Instructions:
 This should be used on a Debian-based Linux distro! I haven't tested other Linux distros, as well as Windows and Mac OS! Expect *many* errors.
 
@@ -27,7 +24,6 @@ Prereq: Clone the repo. Terminal: "git clone https://github.com/PhysCorp/Automat
 
 1) Make sure Python 3.8.5+ and the additional packages are installed! Terminal: "sudo apt install python3 python3-pip firefox firefox-geckodriver python3-venv espeak mbrola mbrola-us2 mbrola-us3"
 2) Change to project directory, then use PIP to install required files. Terminal: "cd AutomatedRadioStation && pip3 install -r requirements.txt"
-*Optionally, use PIP to install required files for voice synthesis. Terminal: "pip3 install -r requirements_voice.txt"*
 3) Configure any speech scripts/playlists (See "Configuration Tab Below").
 4) Add your API Keys from Openweathermap, YouTube Data, and Google Cloud Text to Speech to the respective files (APIKeys.json and GoogleAPIKey.json). Keys aren't required, but you will experience limited functionality.
 5) Run the program! Terminal: "python3 Main.py"
@@ -40,10 +36,8 @@ Prereq: Clone the repo. Terminal: "git clone https://github.com/PhysCorp/Automat
 *Add more lines to either file to increase variety.
 
 # Known Issue(s):
-1) You may experience issues with Pafy if you make too many YouTube API calls within 24 hours. The issue will resolve itself automatically within 24 hours.
-2) The program currently does not set GOOGLE_APPLICATION_CREDENTIALS var automatically. You must manually specify the path to Google Cloud JSON file to use Wavenet voices.
-3) Reading the time aloud will result in a delay according to the length of the song. This will be fixed shortly.
-
+- None!
+ 
 # License info for live playback on my server:
 Intro/Wait music from Jukedeck - create your own at http://jukedeck.com
 
