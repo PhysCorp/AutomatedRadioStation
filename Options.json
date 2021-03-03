@@ -1,6 +1,5 @@
 {
   "playintro": true,
-  "advancedspeech": false,
   "wavenet": false,
   "defaultpsachance": 8,
   "defaultweatherchance": 10,
