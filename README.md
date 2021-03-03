@@ -26,7 +26,7 @@ Prereq: Clone the repo. Terminal: "git clone https://github.com/PhysCorp/Automat
 2) Change to project directory, then use PIP to install required files. Terminal: "cd AutomatedRadioStation && pip3 install -r requirements.txt"
 3) Configure any speech scripts/playlists (See "Configuration Tab Below").
 4) Add your API Keys from Openweathermap, YouTube Data, and Google Cloud Text to Speech to the respective files (APIKeys.json and GoogleAPIKey.json). Keys aren't required, but you will experience limited functionality.
-5) Run the program! Terminal: "python3 Main.py"
+5) Run the program! Terminal: "bash StartRadio.sh"
 
 # Configuration:
 + Check out the Options.json file to configure the program. There, you can adjust the PSA playlist info, speech provider, and more!
