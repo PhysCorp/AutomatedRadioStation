@@ -24,14 +24,11 @@
 # Import Modules
 import random # Random number generation
 import pyttsx3 # Fallback text to speech
-import pafy # Video downloading
-import vlc # Play music and videos
+import youtube_dl # Video downloading
 import time # Sleep and wait commands
 from datetime import datetime # Tell the date on air, as well as determine which playlist based on weekday and time
-import re # Strip all chars except letters and numbers from a string
-import os # Run external commands in Linux [1/3]
-import os.path # Run external commands in Linux [2/3]
-from os import path # Run external commands in Linux [3/3]
+import os # Run external commands in Linux [1/2]
+import os.path # Run external commands in Linux [2/2]
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide" # Hide PyGame welcome message
 import pygame # Sound mixing [1/2]
 import pygame.mixer, pygame.time # Sound mixing [2/2]
@@ -59,9 +56,10 @@ engine.setProperty('volume',1.0) # Set speech volume
 # Init random number generation
 random.seed(a=None, version=2) # Set random seed based on current time
 
-# Init audio engine
+# Init audio engine with 10 channels
 mixer = pygame.mixer
 mixer.init()
+mixer.set_num_channels(10)
 
 # Determine main program directory
 maindirectory = os.path.dirname(os.path.abspath(__file__)) # The absolute path to this file
@@ -72,7 +70,6 @@ with open(str(maindirectory) + '/Options.json', 'r') as json_file:
 
 # Options
 playintro = options_dict["playintro"] # Play the radio show intro on launch
-advancedspeech = options_dict["advancedspeech"] # Use AI-based speech generation service
 wavenet = options_dict["wavenet"] # Bool for whether or not to use Google TTS API
 defaultpsachance = options_dict["defaultpsachance"] # Likelihood of playing a PSA [1/[x] chance]
 defaultweatherchance = options_dict["defaultweatherchance"] # Likelihood of mentioning the weather [1/[x] chance]
@@ -95,7 +92,7 @@ weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[
 welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
 timechance = defaulttimechance # Likelihood of mentioning the time [1/[x] chance]
-versioninfo = "21.2.10" # Script version number [YEAR.MONTH.BUILDNUM]
+versioninfo = "21.3.0" # Script version number [YEAR.MONTH.BUILDNUM]
 savedtime = "" # The text version of the time. Used to compare to actual time and determine when to start the next playlist
 
 # Override radio intro if specified by script args
@@ -130,7 +127,7 @@ radiomusiccount = len([name for name in os.listdir(DIR) if os.path.isfile(os.pat
 #     os.system('export GOOGLE_APPLICATION_CREDENTIALS="' + str(maindirectory) + '\GoogleAPIKey.json"')
 
 # Google Cloud TTS Function to Generate Wavenet Samples
-def text_to_wav(text):
+def text_to_wav(text, earlyfade = False):
     # If the current time is in the early morning, save money by switching to Standard voice
     timeobject = datetime.now()
     currenttime = int(timeobject.strftime("%H"))
@@ -162,42 +159,20 @@ def text_to_wav(text):
     with open(str(maindirectory) + "/" + filename, "wb") as out:
         out.write(response.audio_content)
 
-    sound = mixer.Sound(str(maindirectory) + "/en-US.wav")
-    sound.set_volume(1)
-    channel = sound.play()
-    while channel.get_busy():
-        pygame.time.wait(100)
-
-# Custom function to synthesize audio in the background [followed by speakrichtext function]
-def preparevoice(message):
-    if path.exists(str(maindirectory) + "/Output.wav"): # If the old file exists already
-        if str(platform.system()) == "Darwin" or str(platform.system()) == "Linux":
-            os.system("rm \"" + str(maindirectory) + "/Output.wav" + "\"") # Delete the old file [Linux and Mac OS]
-        else:
-            os.system("del \"" + str(maindirectory) + "/Output.wav" + "\"") # Delete the old file [Windows]
-    # Run the neural synthesis engine asynchronously, piping all output to nohup.out
-    os.system("nohup python3 \"" + str(maindirectory) + "/Real-Time-Voice-Cloning-master/demo_cli.py\" --no_sound --speechcontent \"" + str(re.sub("[\W ]+"," ",str(message).replace(".","_")).replace("_",". ")) + "\"  &")
-
-# Speak text with neural synthesis engine first, but fallback to system TTS if the file isn't ready
-def speakrichtext(message):
-    # If enabled, write announcer subtitles to text file for use in OBS Studio
-    if writeoutput == True:
-        with open(str(maindirectory) + "/Output.txt","w") as fileoutput:
-            fileoutput.write("\n" + str(message))
-            fileoutput.close()
-    # If the file is not ready, use fallback TTS, prepending string with "Announcer two here."
-    if not path.exists(str(maindirectory) + "/Output.wav"):
-        speaktext("Announcer two here. " + str(message))
-    else: # If the file IS ready, play it synchronously
-        sound = mixer.Sound(str(maindirectory) + "/Output.wav")
-        sound.set_volume(1)
-        channel = sound.play()
-        while channel.get_busy():
-            pygame.time.wait(100)
-    longspeechstring = "" # Clear longspeechstring var
+    voice = mixer.Sound(str(maindirectory) + "/en-US.wav")
+    voice.set_volume(1)
+    mixer.Channel(0).play(voice, fade_ms=0)
+    if earlyfade: # If specified, continue running code 5 seconds before sound ends
+        waittime = (voice.get_length()*1000) - 5000
+        if waittime < 0:
+            waittime = voice.get_length()*1000
+        # pygame.time.wait(waittime)
+        time.sleep(waittime/1000)
+    else:
+        time.sleep(voice.get_length())
 
 # Custom function to just speak text with system TTS
-def speaktext(message):
+def speaktext(message, earlyfade = False):
     print("[SPEECH] " + "\"" + str(message) + "\"", end="\n\n") # Print the message contents to stdout
     # If enabled, write message contents to text file for use in OBS Studio
     if writeoutput == True:
@@ -205,13 +180,16 @@ def speaktext(message):
             fileoutput.write("\n" + str(message))
             fileoutput.close()
     if wavenet == True:
-        text_to_wav(str(message))
+        if earlyfade:
+            text_to_wav(str(message), earlyfade=True)
+        else:
+            text_to_wav(str(message), earlyfade=False)
     else:
         # If platform is Mac OS or Windows, use system TTS
         if str(platform.system()) == "Darwin" or str(platform.system()) == "Windows":
             engine.say(str(message)) # System TTS [1/2]
             engine.runAndWait() # System TTS [2/2]
-        else: # On Linux, use MBROLA through espeak
+        else: # On Linux, use MBROLA or espeak
             os.system("espeak -p 50 -s 165 -v mb/mb-us2 \"" + str(message).replace("'","").replace("\"","") + "\"") # MBROLA TTS
             # engine.say(str(message)) # System TTS [1/2]
             # engine.runAndWait() # System TTS [2/2]
@@ -222,7 +200,7 @@ speaktext("The radio will be back online in a moment!")
 # Start a random radio "waiting" song
 waitingsound = mixer.Sound(str(maindirectory) + "/Assets/Music/" + str(random.randint(1,radiomusiccount)) + ".WAV")
 waitingsound.set_volume(0.4)
-channel = waitingsound.play()
+mixer.Channel(1).play(waitingsound, fade_ms=1000)
 
 # State any errors/warnings to user
 if weatherkey == "":
@@ -368,19 +346,13 @@ if not overrideplaylist:
 
 # Add a random variation of the "Intro Text Short" speech to longspeechstring var & include the version number
 longspeechstring += " " + str(speechIntroTextShort[random.randint(0,len(speechIntroTextShort)-1)])
-# longspeechstring += " Version " + str(versioninfo) + "."
+longspeechstring += " Version " + str(versioninfo) + "."
 
 # Add a random variation of the "First Run Prompts" speech to longspeechstring var
 longspeechstring += " " + str(speechFirstrunPrompts[random.randint(0,len(speechFirstrunPrompts)-1)])
 
-# If advancedspeech option is enabled,
-if advancedspeech == True:
-    speaktext("Almost there. Just a few more seconds while speech is being generated.")
-    preparevoice(longspeechstring) # Trigger voice synthesis engine for generation
-    speakrichtext(longspeechstring) # Trigger voice synthesis engine for playback
-
-# Stop the waiting sound
-waitingsound.stop()
+# Stop the waiting sound, fading out for 1 second
+waitingsound.fadeout(1000)
 
 # Loop through songs, announcements, and other commentary forever
 while True:
@@ -393,36 +365,35 @@ while True:
             # Play random radio sound before speaking (if file exists)
             if radiosoundcount >= 1:
                 sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount)) + ".WAV")
-                sound.set_volume(0.5)
-                channel = sound.play()
-                while channel.get_busy():
-                    pygame.time.wait(100)
+                sound.set_volume(0.3)
+                mixer.Channel(2).play(sound, fade_ms=0)
+                waittime = (sound.get_length()*1000)/2
+                if waittime < 0:
+                    waittime = sound.get_length()*1000
+                # pygame.time.wait(waittime)
+                time.sleep(waittime/1000)
             
             # Play the background waiting sound while the announcer speaks
-            waitingsound = mixer.Sound(str(maindirectory) + "/Assets/Music/" + str(random.randint(1,radiomusiccount)) + ".WAV")
-            waitingsound.set_volume(0.2)
-            channel = waitingsound.play()
+            newwaitingsound = mixer.Sound(str(maindirectory) + "/Assets/Music/" + str(random.randint(1,radiomusiccount)) + ".WAV")
+            newwaitingsound.set_volume(0.2)
+            mixer.Channel(3).play(newwaitingsound, fade_ms=1000)
 
-            # Play the synthesized voice if enabled, else use system TTS
-            if advancedspeech == True:
-                sound = mixer.Sound(str(maindirectory) + "/Output.wav")
-                sound.set_volume(1)
-                channel = sound.play()
-                while channel.get_busy():
-                    pygame.time.wait(100)
-            else:
-                speaktext(longspeechstring)
+            # Play the synthesized voice
+            speaktext(longspeechstring)
 
-            # Stop the waiting sound
-            waitingsound.stop()
+            # Stop the waiting sound, fading out for 1 second
+            newwaitingsound.fadeout(1000)
 
             # Play random radio sound after speaking (if file exists)
             if radiosoundcount >= 1:
                 sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount)) + ".WAV")
-                sound.set_volume(0.5)
-                channel = sound.play()
-                while channel.get_busy():
-                    pygame.time.wait(100)
+                sound.set_volume(0.3)
+                mixer.Channel(4).play(sound, fade_ms=0)
+                waittime = (sound.get_length()*1000)/2
+                if waittime < 0:
+                    waittime = sound.get_length()*1000
+                # pygame.time.wait(waittime)
+                time.sleep(waittime/1000)
 
             # Choose the first song to play
             if len(listPlayedSongs) >= len(musicplaylist) - 1: # If the music list has been exhausted
@@ -436,8 +407,6 @@ while True:
             print("[INFO] " + "Likelihood VARs:\n\tPSA: [1/" + str(psachance) + "]\tWeather: [1/" + str(weatherchance) + "]\tWelcomeMessage: [1/" + str(welcomechance) + "]\tWeekdayMessage: [1/" + str(weekdaychance) + "]\tTime: [1/" + str(timechance) + "]", end="\n\n") # Show chance VARs
 
             longspeechstring = "" # Clear the longspeechstring var
-            if advancedspeech: # If advanced speech is enabled,
-                longspeechstring += "Announcer two here. " # Add the text "announcer two here" to longspeechstring var
             longspeechstring += " " + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
             # longspeechstring += " " + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
             
@@ -446,7 +415,18 @@ while True:
                 longspeechstring += " Stay safe out there!"
             
             # Use system TTS engine to speak the next song info
-            speaktext(longspeechstring)
+            speaktext(longspeechstring, earlyfade=True)
+
+            # Play random radio sound after speaking (if file exists)
+            if radiosoundcount >= 1:
+                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount)) + ".WAV")
+                sound.set_volume(0.3)
+                mixer.Channel(4).play(sound, fade_ms=0)
+                waittime = (sound.get_length()*1000)/2
+                if waittime < 0:
+                    waittime = sound.get_length()*1000
+                # pygame.time.wait(waittime)
+                time.sleep(waittime/1000)
 
             # Prevent the intro from playing again on next loop
             playintro = False
@@ -458,21 +438,25 @@ while True:
         #         fileoutput2.write(str(playlistnames[songselectionint])
         #         fileoutput2.close()
 
-        # Download the next song with pafy module
-        url = musicplaylist[songselectionint]
-        pafy.set_api_key(pafyAPIkey)
-        video = pafy.new(url, basic=False, gdata=False, size=False, callback=None, ydl_opts=None)
-        best = video.getbestaudio()
-        playurl = best.url
+        # Download the next song as a WAV file with YouTube-DL
+        ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "geobypass": True, "noplaylist": True, "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "wav"}]}
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            # ydl.download(str(musicplaylist[songselectionint]))
+            info = ydl.extract_info(str(musicplaylist[songselectionint]), download=True)
 
-        # Play the downloaded song in headless VLC
-        Instance = vlc.Instance("--vout=dummy")
-        player = Instance.media_player_new()
-        Media = Instance.media_new(playurl)
-        Media.get_mrl()
-        player.set_media(Media)
-        player.play()
-        player.audio_set_volume(80)
+        # Play the downloaded song with pygame mixer
+        music = mixer.Sound(str(maindirectory) + "/DownloadedSongs/" + str(info["id"]) + ".wav")
+        music.set_volume(0.8)
+        mixer.Channel(5).play(music, fade_ms=5000)
+        waittime = (music.get_length()*1000) - 5000
+        if waittime < 0:
+            waittime = music.get_length()*1000
+        # pygame.time.wait(waittime)
+        # Show operator that song is playing in stdout
+        print("[INFO] " + "Currently playing " + str(playlistnames[songselectionint]) + ".", end="\n\n")
+        time.sleep(waittime/1000)
+        music.fadeout(5000)
+
 
         # Clear the longspeechstring var
         longspeechstring = ""
@@ -482,18 +466,18 @@ while True:
 
         # Listening to PhysCorp's Automated Station & Version Info
         longspeechstring += " " + str(speechIntroTextShort[random.randint(0,len(speechIntroTextShort)-1)])
-        # longspeechstring += " Version " + str(versioninfo) + "."
+        longspeechstring += " Version " + str(versioninfo) + "."
 
-        # # Chance to mention the time
-        # if random.randint(0, timechance) == 1:
-        #     timeobject = datetime.now()
-        #     currenttime = timeobject.strftime("%I:%M")
-        #     longspeechstring += " The time is currently " + str(currenttime) + "."
-        #     timechance = defaulttimechance
+        # Chance to mention the time
+        if random.randint(0, timechance) == 1:
+            timeobject = datetime.now()
+            currenttime = timeobject.strftime("%I:%M")
+            longspeechstring += " The time is currently " + str(currenttime) + "."
+            timechance = defaulttimechance
 
-        # # Increase the chance to speak the time
-        # if timechance > 2:
-        #     timechance -= 1
+        # Increase the chance to speak the time
+        if timechance > 2:
+            timechance -= 1
 
         # Chance to mention one of the "First Run Prompts" again
         if random.randint(0, welcomechance) == 1:
@@ -608,36 +592,26 @@ while True:
         if random.randint(0,4) == 1:
             longspeechstring += " Stay safe out there!"
 
-        # Prepare the synthesized speech if enabled
-        if advancedspeech == True:
-            preparevoice(longspeechstring)
-
-        # Wait until music finishes playing on VLC
-        time.sleep(1.5)
-        duration = player.get_length() / 1000
-        time.sleep(duration)
-        player.stop()
-        player.release()
-        Media.release()
-        Instance.release()
-
         # Play random radio sound before speaking if file exists
         if radiosoundcount >= 1:
             sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount)) + ".WAV")
-            sound.set_volume(0.5)
-            channel = sound.play()
-            while channel.get_busy():
-                pygame.time.wait(100)
+            sound.set_volume(0.3)
+            mixer.Channel(6).play(sound, fade_ms=0)
+            waittime = (sound.get_length()*1000)/2
+            if waittime < 0:
+                waittime = sound.get_length()*1000
+            # pygame.time.wait(waittime)
+            time.sleep(waittime/1000)
         
         # Play the background waiting sound while the announcer speaks
-            waitingsound = mixer.Sound(str(maindirectory) + "/Assets/Music/" + str(random.randint(1,radiomusiccount)) + ".WAV")
-            waitingsound.set_volume(0.2)
-            channel = waitingsound.play()
+            newwaitingsoundtwo = mixer.Sound(str(maindirectory) + "/Assets/Music/" + str(random.randint(1,radiomusiccount)) + ".WAV")
+            newwaitingsoundtwo.set_volume(0.2)
+            mixer.Channel(7).play(newwaitingsoundtwo, fade_ms=1000)
 
         # If the time is midnight (if stored weekday info doesn't match current weekday info), restart the script to gather new playlist info
         if savedweekday != datetime.today().weekday():
             speaktext("It's midnight. I'm switching to a new playlist. Please wait.")
-            waitingsound.stop()
+            newwaitingsoundtwo.fadeout(1000)
             os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
         
         # Compared the savedtime VAR to the current time text. If mismatch, restart the station with a new playlist
@@ -665,14 +639,11 @@ while True:
             waitingsound.stop()
             os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
 
-        # Play the synthesized speech, or use fallback TTS if not ready
-        if advancedspeech == True:
-            speakrichtext(longspeechstring)
-        else:
-            speaktext(longspeechstring)
+        # Play the synthesized speech
+        speaktext(longspeechstring)
 
-        # Stop the waiting sound
-        waitingsound.stop()
+        # Stop the waiting sound, fading out for 1 second
+        newwaitingsoundtwo.fadeout(1000)
 
         # Play the PSA if triggered
         if playpsa == True:
@@ -681,28 +652,22 @@ while True:
             # Play the PSA, if the video isn't available, repeat the process until one is
             while True:
                 try:
-                    # Play PSA using headless VLC
-                    url = psaplaylist[random.randint(1,len(psaplaylist)-1)]
-                    pafy.set_api_key(pafyAPIkey)
-                    video = pafy.new(url, basic=False, gdata=False, size=False, callback=None, ydl_opts=None)
-                    best = video.getbestaudio()
-                    playurl = best.url
+                    # Download the next song as a WAV file with YouTube-DL
+                    ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedPSAs/%(id)s.%(ext)s", "ignoreerrors": True, "geobypass": True, "noplaylist": True, "download_archive": str(maindirectory) + "/PSAArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "wav"}]}
+                    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                        # ydl.download(str(musicplaylist[songselectionint]))
+                        info = ydl.extract_info(str(psaplaylist[random.randint(1,len(psaplaylist)-1)]), download=True)
 
-                    Instance = vlc.Instance("--vout=dummy")
-                    player = Instance.media_player_new()
-                    Media = Instance.media_new(playurl)
-                    Media.get_mrl()
-                    player.set_media(Media)
-                    player.play()
-                    player.audio_set_volume(70)
+                    # Play the downloaded song with pygame mixer
+                    psa = mixer.Sound(str(maindirectory) + "/DownloadedPSAs/" + str(info["id"]) + ".wav")
+                    psa.set_volume(0.7)
+                    mixer.Channel(9).play(psa, fade_ms=1000)
+                    waittime = psa.get_length()*1000
+                    # pygame.time.wait(waittime)
+                    # Show operator that song is playing in stdout
+                    print("[INFO] " + "Currently playing PSA.", end="\n\n")
+                    time.sleep(waittime/1000)
 
-                    time.sleep(1.5)
-                    duration = player.get_length() / 1000
-                    time.sleep(duration)
-                    player.stop()
-                    player.release()
-                    Media.release()
-                    Instance.release()
                     pass
                     break # Break out of statement
                 except (RuntimeError, TypeError, NameError, OSError):
@@ -715,13 +680,17 @@ while True:
         # Play random radio sound after speaking if file exists
         if radiosoundcount >= 1:
             sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount)) + ".WAV")
-            sound.set_volume(0.5)
-            channel = sound.play()
-            while channel.get_busy():
-                pygame.time.wait(100)
+            sound.set_volume(0.3)
+            mixer.Channel(8).play(sound, fade_ms=0)
+            waittime = (sound.get_length()*1000)/2
+            if waittime < 0:
+                waittime = sound.get_length()*1000
+            # pygame.time.wait(waittime)
+            time.sleep(waittime/1000)
     except (RuntimeError, TypeError, NameError, OSError, KeyError, IndexError, LookupError):
         # Say that something has gone wrong
         speaktext("It looks like that song isn't available. Please wait while I find another song.")
+        longspeechstring = "" # Reset longspeechstring
         playintro = True # Failsafe, run through intro again
         pass
         # os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
