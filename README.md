@@ -15,14 +15,14 @@ This software is built with Python in Visual Studio Code. The program scrapes a 
 
 # Requirements:
 This program requires that you have the following installed, as well as all the dependencies listed in requirements.txt:
-firefox, espeak, python3-venv, firefox-geckodriver, mbrola, mbrola-us2, mbrola-us3
+firefox, espeak, python3-venv, firefox-geckodriver, ffmpeg, mbrola, mbrola-us2, mbrola-us3
 
 # Install Instructions:
 This should be used on a Debian-based Linux distro! I haven't tested other Linux distros, as well as Windows and Mac OS! Expect *many* errors.
 
 Prereq: Clone the repo. Terminal: "git clone https://github.com/PhysCorp/AutomatedRadioStation.git"
 
-1) Make sure Python 3.8.5+ and the additional packages are installed! Terminal: "sudo apt install python3 python3-pip firefox firefox-geckodriver python3-venv espeak mbrola mbrola-us2 mbrola-us3"
+1) Make sure Python 3.8.5+ and the additional packages are installed! Terminal: "sudo apt install python3 python3-pip firefox firefox-geckodriver python3-venv espeak mbrola mbrola-us2 mbrola-us3 ffmpeg"
 2) Change to project directory, then use PIP to install required files. Terminal: "cd AutomatedRadioStation && pip3 install -r requirements.txt"
 3) Configure any speech scripts/playlists (See "Configuration Tab Below").
 4) Add your API Keys from Openweathermap, YouTube Data, and Google Cloud Text to Speech to the respective files (APIKeys.json and GoogleAPIKey.json). Keys aren't required, but you will experience limited functionality.
