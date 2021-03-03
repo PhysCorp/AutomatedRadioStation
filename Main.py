@@ -692,6 +692,6 @@ while True:
         speaktext("It looks like that song isn't available. Please wait while I find another song.")
         longspeechstring = "" # Reset longspeechstring
         playintro = True # Failsafe, run through intro again
-        pass
-        # os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
+        #pass
+        os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
         # os.execv(sys.executable, ['python3'] + sys.argv + ["skipintro"]) # Restart the script by issuing a terminal command, skipping the intro
