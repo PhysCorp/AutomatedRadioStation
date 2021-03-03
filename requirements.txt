@@ -1,6 +1,4 @@
 pyttsx3
-pafy
-python-vlc
 pygame
 selenium
 requests
