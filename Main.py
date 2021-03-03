@@ -133,12 +133,12 @@ def text_to_wav(text, earlyfade = False):
     timeobject = datetime.now()
     currenttime = int(timeobject.strftime("%H"))
     if currenttime >= 0 and currenttime < 8:
-        voice_name = "en-US-Standard-D"
+        voice_name = "en-US-Standard-I"
     else:
-        voice_name = "en-US-Wavenet-D"
+        voice_name = "en-US-Wavenet-I"
     
     # Uncomment the following line to force Standard voice
-    # voice_name = "en-US-Standard-D"
+    # voice_name = "en-US-Standard-I"
 
     language_code = "-".join(voice_name.split("-")[:2])
     text_input = texttospeech.SynthesisInput(text=text)
@@ -147,7 +147,7 @@ def text_to_wav(text, earlyfade = False):
     )
     audio_config = texttospeech.AudioConfig(
         audio_encoding=texttospeech.AudioEncoding.LINEAR16,
-        speaking_rate=1.10,
+        speaking_rate=1.00,
         pitch=-5
     )
 
