@@ -46,7 +46,7 @@ from PlaylistSearch import Playlist # Set VARs for playlist URL, weekday text, e
 
 # Setup AI text generation
 # textgen = textgenrnn()
-# print("[INFO] " + str(textgen.generate()), end="\n\n") # Debug, print random AI-generated sentence to stdout
+# print("[INFO] Test phrase: " + str(textgen.generate()), end="\n\n") # Debug, print random AI-generated sentence to stdout
 
 # Init TTS engine
 engine = pyttsx3.init()
@@ -71,6 +71,7 @@ with open(str(maindirectory) + '/Options.json', 'r') as json_file:
 # Options
 playintro = options_dict["playintro"] # Play the radio show intro on launch
 wavenet = options_dict["wavenet"] # Bool for whether or not to use Google TTS API
+predownload = options_dict["predownload"] # Bool for whether or not to download the entire music playlist ahead of time
 defaultpsachance = options_dict["defaultpsachance"] # Likelihood of playing a PSA [1/[x] chance]
 defaultweatherchance = options_dict["defaultweatherchance"] # Likelihood of mentioning the weather [1/[x] chance]
 defaultwelcomechance = options_dict["defaultwelcomechance"] # Likelihood of mentioning the welcome message again [1/[x] chance]
@@ -92,7 +93,7 @@ weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[
 welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
 timechance = defaulttimechance # Likelihood of mentioning the time [1/[x] chance]
-versioninfo = "21.3.0" # Script version number [YEAR.MONTH.BUILDNUM]
+versioninfo = "21.3.1" # Script version number [YEAR.MONTH.BUILDNUM]
 savedtime = "" # The text version of the time. Used to compare to actual time and determine when to start the next playlist
 
 # Override radio intro if specified by script args
@@ -200,7 +201,7 @@ speaktext("The radio will be back online in a moment!")
 # Start a random radio "waiting" song
 waitingsound = mixer.Sound(str(maindirectory) + "/Assets/Music/" + str(random.randint(1,radiomusiccount)) + ".WAV")
 waitingsound.set_volume(0.4)
-mixer.Channel(1).play(waitingsound, fade_ms=1000)
+mixer.Channel(1).play(waitingsound, fade_ms=1000, loops=999)
 
 # State any errors/warnings to user
 if weatherkey == "":
@@ -283,6 +284,14 @@ driver.close() # Close the web rendering engine
 
 # Print message to stdout
 print("[INFO] " + "Finished downloading music playlist.", end="\n\n")
+
+# If predownload is enabled, download entire music library ahead of time
+if predownload:
+    print("[INFO] " + "Saving music playlist to disk ...", end="\n\n")
+    ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "geobypass": True, "noplaylist": True, "source_address": "0.0.0.0", "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "wav"}]}
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        ydl.download(musicplaylist)
+        # info = ydl.extract_info(musicplaylist, download=True)
 
 # Next, scrape the PSA playlist (if playlist URL is specified)
 if psaplaylisturl != "":
@@ -439,7 +448,7 @@ while True:
         #         fileoutput2.close()
 
         # Download the next song as a WAV file with YouTube-DL
-        ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "geobypass": True, "noplaylist": True, "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "wav"}]}
+        ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "geobypass": True, "source_address": "0.0.0.0", "noplaylist": True, "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "wav"}]}
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             # ydl.download(str(musicplaylist[songselectionint]))
             info = ydl.extract_info(str(musicplaylist[songselectionint]), download=True)
@@ -653,7 +662,7 @@ while True:
             while True:
                 try:
                     # Download the next song as a WAV file with YouTube-DL
-                    ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedPSAs/%(id)s.%(ext)s", "ignoreerrors": True, "geobypass": True, "noplaylist": True, "download_archive": str(maindirectory) + "/PSAArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "wav"}]}
+                    ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedPSAs/%(id)s.%(ext)s", "ignoreerrors": True, "geobypass": True, "source_address": "0.0.0.0", "noplaylist": True, "download_archive": str(maindirectory) + "/PSAArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "wav"}]}
                     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                         # ydl.download(str(musicplaylist[songselectionint]))
                         info = ydl.extract_info(str(psaplaylist[random.randint(1,len(psaplaylist)-1)]), download=True)
@@ -690,8 +699,8 @@ while True:
     except (RuntimeError, TypeError, NameError, OSError, KeyError, IndexError, LookupError):
         # Say that something has gone wrong
         speaktext("It looks like that song isn't available. Please wait while I find another song.")
-        longspeechstring = "" # Reset longspeechstring
-        playintro = True # Failsafe, run through intro again
-        #pass
+        # longspeechstring = "" # Reset longspeechstring
+        # playintro = True # Failsafe, run through intro again
+        # pass
         os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
         # os.execv(sys.executable, ['python3'] + sys.argv + ["skipintro"]) # Restart the script by issuing a terminal command, skipping the intro
