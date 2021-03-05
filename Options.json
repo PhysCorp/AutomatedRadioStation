@@ -1,7 +1,8 @@
 {
   "playintro": true,
   "wavenet": false,
-  "predownload": false,
+  "predownload": true,
+  "waitforuser": false,
   "defaultpsachance": 8,
   "defaultweatherchance": 10,
   "defaultwelcomechance": 8,
