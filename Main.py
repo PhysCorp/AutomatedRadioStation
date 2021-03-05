@@ -71,6 +71,7 @@ with open(str(maindirectory) + '/Options.json', 'r') as json_file:
 # Options
 playintro = options_dict["playintro"] # Play the radio show intro on launch
 wavenet = options_dict["wavenet"] # Bool for whether or not to use Google TTS API
+waitforuser = options_dict["waitforuser"] # Bool for whether or not to wait for user input before starting radio
 predownload = options_dict["predownload"] # Bool for whether or not to download the entire music playlist ahead of time
 defaultpsachance = options_dict["defaultpsachance"] # Likelihood of playing a PSA [1/[x] chance]
 defaultweatherchance = options_dict["defaultweatherchance"] # Likelihood of mentioning the weather [1/[x] chance]
@@ -93,7 +94,7 @@ weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[
 welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
 timechance = defaulttimechance # Likelihood of mentioning the time [1/[x] chance]
-versioninfo = "21.3.1" # Script version number [YEAR.MONTH.BUILDNUM]
+VERSION_INFO = "21.3.2" # Script version number [YEAR.MONTH.BUILDNUM]
 savedtime = "" # The text version of the time. Used to compare to actual time and determine when to start the next playlist
 
 # Override radio intro if specified by script args
@@ -275,7 +276,7 @@ for video in videos:
         name = longname_concat.title()
     else:
         name = longname_concat[:end].title()
-    print(f"Retrieved \"{name}\"", end="\n")
+    print(f"Retrieved info for \"{name}\"", end="\n")
     playlist.append(link)
     playlistnames.append(name)
 
@@ -288,9 +289,12 @@ print("[INFO] " + "Finished downloading music playlist.", end="\n\n")
 # If predownload is enabled, download entire music library ahead of time
 if predownload:
     print("[INFO] " + "Saving music playlist to disk ...", end="\n\n")
-    ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "geobypass": True, "noplaylist": True, "source_address": "0.0.0.0", "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "wav"}]}
+    speaktext("Please enjoy this song while I finish preparing a playlist for you. This may take a second.")
+    downloadlist = []
+    downloadlist.append(str(url))
+    ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "geobypass": True, "noplaylist": True, "source_address": "0.0.0.0", "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        ydl.download(musicplaylist)
+        ydl.download(downloadlist)
         # info = ydl.extract_info(musicplaylist, download=True)
 
 # Next, scrape the PSA playlist (if playlist URL is specified)
@@ -307,11 +311,15 @@ if psaplaylisturl != "":
     driver = webdriver.Firefox(options=opts)
     driver.get(url) # Open URL
     playlist=[] # Clear "playlist" list
+    playlistnamesPSA=[]
 
     videos=driver.find_elements_by_class_name('style-scope ytd-playlist-video-renderer')
     for video in videos:
         link2=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("href")
+        longname2=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("title")
         playlist.append(link2) # Append each URL to the list
+        playlistnamesPSA.append(longname2)
+        print(f"Retrieved info for \"{longname2}\"", end="\n")
 
     psaplaylist=vidstrip(playlist)
     driver.close() # Close the web rendering engine
@@ -355,7 +363,7 @@ if not overrideplaylist:
 
 # Add a random variation of the "Intro Text Short" speech to longspeechstring var & include the version number
 longspeechstring += " " + str(speechIntroTextShort[random.randint(0,len(speechIntroTextShort)-1)])
-longspeechstring += " Version " + str(versioninfo) + "."
+longspeechstring += " Version " + str(VERSION_INFO) + "."
 
 # Add a random variation of the "First Run Prompts" speech to longspeechstring var
 longspeechstring += " " + str(speechFirstrunPrompts[random.randint(0,len(speechFirstrunPrompts)-1)])
@@ -369,6 +377,11 @@ while True:
         # Set the random seed again based on current time
         random.seed(a=None, version=2)
         
+        # Wait for the user to press ENTER if they specified waiting in Options.json
+        if waitforuser:
+            print("[INFO] The radio is ready! Press ENTER to start.")
+            testinput = input("")
+
         # Play radio intro if enabled
         if playintro == True:
             # Play random radio sound before speaking (if file exists)
@@ -447,35 +460,40 @@ while True:
         #         fileoutput2.write(str(playlistnames[songselectionint])
         #         fileoutput2.close()
 
-        # Download the next song as a WAV file with YouTube-DL
-        ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "geobypass": True, "source_address": "0.0.0.0", "noplaylist": True, "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "wav"}]}
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            # ydl.download(str(musicplaylist[songselectionint]))
-            info = ydl.extract_info(str(musicplaylist[songselectionint]), download=True)
+        # Clear the longspeechstring var
+        longspeechstring = ""
+
+        # If the file has not been downloaded, do the following
+        if not os.path.exists(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=","")):
+            # Download the next song as a OGG file with YouTube-DL
+            ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "geobypass": True, "source_address": "0.0.0.0", "noplaylist": True, "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                # ydl.download(str(musicplaylist[songselectionint]))
+                info = ydl.extract_info(str(musicplaylist[songselectionint]), download=True)
 
         # Play the downloaded song with pygame mixer
-        music = mixer.Sound(str(maindirectory) + "/DownloadedSongs/" + str(info["id"]) + ".wav")
+        music = mixer.Sound(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=",""))
         music.set_volume(0.8)
         mixer.Channel(5).play(music, fade_ms=5000)
         waittime = (music.get_length()*1000) - 5000
         if waittime < 0:
             waittime = music.get_length()*1000
+        if waittime > 600000: # If song is greater than 10 minutes
+            waittime = 600000 # Set length to maximum of 10 minutes
+            longspeechstring += "That's enough of that song. "
         # pygame.time.wait(waittime)
         # Show operator that song is playing in stdout
         print("[INFO] " + "Currently playing " + str(playlistnames[songselectionint]) + ".", end="\n\n")
+        print("[DEBUG - SONG PATH] " + str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), end="\n\n")
         time.sleep(waittime/1000)
         music.fadeout(5000)
-
-
-        # Clear the longspeechstring var
-        longspeechstring = ""
 
         # Song that just played
         longspeechstring += str(speechSongEndTransitions[random.randint(0,len(speechSongEndTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
 
         # Listening to PhysCorp's Automated Station & Version Info
         longspeechstring += " " + str(speechIntroTextShort[random.randint(0,len(speechIntroTextShort)-1)])
-        longspeechstring += " Version " + str(versioninfo) + "."
+        longspeechstring += " Version " + str(VERSION_INFO) + "."
 
         # Chance to mention the time
         if random.randint(0, timechance) == 1:
@@ -661,14 +679,16 @@ while True:
             # Play the PSA, if the video isn't available, repeat the process until one is
             while True:
                 try:
-                    # Download the next song as a WAV file with YouTube-DL
-                    ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedPSAs/%(id)s.%(ext)s", "ignoreerrors": True, "geobypass": True, "source_address": "0.0.0.0", "noplaylist": True, "download_archive": str(maindirectory) + "/PSAArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "wav"}]}
-                    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                        # ydl.download(str(musicplaylist[songselectionint]))
-                        info = ydl.extract_info(str(psaplaylist[random.randint(1,len(psaplaylist)-1)]), download=True)
+                    playlistitem = str(psaplaylist[random.randint(1,len(psaplaylist)-1)])
+                    if not os.path.exists(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=","")):
+                        # Download the next song as a OGG file with YouTube-DL
+                        ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedPSAs/%(id)s.%(ext)s", "ignoreerrors": True, "geobypass": True, "source_address": "0.0.0.0", "noplaylist": True, "download_archive": str(maindirectory) + "/PSAArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
+                        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                            # ydl.download(str(musicplaylist[songselectionint]))
+                            info = ydl.extract_info(playlistitem, download=True)
 
                     # Play the downloaded song with pygame mixer
-                    psa = mixer.Sound(str(maindirectory) + "/DownloadedPSAs/" + str(info["id"]) + ".wav")
+                    psa = mixer.Sound(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""))
                     psa.set_volume(0.7)
                     mixer.Channel(9).play(psa, fade_ms=1000)
                     waittime = psa.get_length()*1000
