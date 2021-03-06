@@ -1,4 +1,5 @@
 pyttsx3
+pydub
 pygame
 selenium
 requests
