@@ -24,6 +24,7 @@
 # Import Modules
 import random # Random number generation
 import pyttsx3 # Fallback text to speech
+from pydub import AudioSegment, effects # Audio normalization
 import youtube_dl # Video downloading
 import time # Sleep and wait commands
 from datetime import datetime # Tell the date on air, as well as determine which playlist based on weekday and time
@@ -94,7 +95,7 @@ weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[
 welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
 timechance = defaulttimechance # Likelihood of mentioning the time [1/[x] chance]
-VERSION_INFO = "21.3.2" # Script version number [YEAR.MONTH.BUILDNUM]
+VERSION_INFO = "21.3.3" # Script version number [YEAR.MONTH.BUILDNUM]
 savedtime = "" # The text version of the time. Used to compare to actual time and determine when to start the next playlist
 
 # Override radio intro if specified by script args
@@ -284,7 +285,7 @@ musicplaylist=vidstrip(playlist) # Strip unneccessary chars from list
 driver.close() # Close the web rendering engine
 
 # Print message to stdout
-print("[INFO] " + "Finished downloading music playlist.", end="\n\n")
+print("[INFO] " + "Finished downloading info from music playlist.", end="\n\n")
 
 # If predownload is enabled, download entire music library ahead of time
 if predownload:
@@ -328,7 +329,7 @@ else:
     print("[INFO] " + "PSA playlist URL has not been set. The station will not play PSAs.", end="\n\n")
 
 # Print completion message to stdout
-print("[INFO] " + "Finished downloading PSA playlist. Starting radio ...", end="\n\n")
+print("[INFO] " + "Finished downloading info from PSA playlist. Starting radio ...", end="\n\n")
 
 # Read and store each external speech script into memory
 # (Each line in the textfile represents a different index in the list)
@@ -371,17 +372,17 @@ longspeechstring += " " + str(speechFirstrunPrompts[random.randint(0,len(speechF
 # Stop the waiting sound, fading out for 1 second
 waitingsound.fadeout(1000)
 
+# Wait for the user to press ENTER if they specified waiting in Options.json
+if waitforuser:
+    print("[INFO] The radio is ready! Press ENTER to start.")
+    testinput = input("")
+
 # Loop through songs, announcements, and other commentary forever
 while True:
     try: # Uses "try except" loop, ensuring that if an error occurs, the script will restart automatically
         # Set the random seed again based on current time
         random.seed(a=None, version=2)
         
-        # Wait for the user to press ENTER if they specified waiting in Options.json
-        if waitforuser:
-            print("[INFO] The radio is ready! Press ENTER to start.")
-            testinput = input("")
-
         # Play radio intro if enabled
         if playintro == True:
             # Play random radio sound before speaking (if file exists)
@@ -471,9 +472,14 @@ while True:
                 # ydl.download(str(musicplaylist[songselectionint]))
                 info = ydl.extract_info(str(musicplaylist[songselectionint]), download=True)
 
+        # Normalize the audio
+        beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
+        aftersound = effects.normalize(beforesound)  
+        aftersound.export(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg")
+
         # Play the downloaded song with pygame mixer
         music = mixer.Sound(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=",""))
-        music.set_volume(0.8)
+        music.set_volume(0.7)
         mixer.Channel(5).play(music, fade_ms=5000)
         waittime = (music.get_length()*1000) - 5000
         if waittime < 0:
@@ -686,6 +692,11 @@ while True:
                         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                             # ydl.download(str(musicplaylist[songselectionint]))
                             info = ydl.extract_info(playlistitem, download=True)
+
+                    # Normalize the audio
+                    beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
+                    aftersound = effects.normalize(beforesound)  
+                    aftersound.export(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg")
 
                     # Play the downloaded song with pygame mixer
                     psa = mixer.Sound(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""))
