@@ -36,7 +36,7 @@ Prereq: Clone the repo. Terminal: "git clone https://github.com/PhysCorp/Automat
 *Add more lines to either file to increase variety.
 
 # Known Issue(s):
-- None!
+- You cannot pre-download YouTube playlists greater than 100 videos.
  
 # License info for live playback on my server:
 Intro/Wait music from Jukedeck - create your own at http://jukedeck.com
