@@ -43,7 +43,7 @@ import json # Parse JSON files for API and playlist info
 from google.cloud import texttospeech # [PAID] Google Cloud Text to Speech
 
 # Custom Modules
-from PlaylistSearch import Playlist # Set VARs for playlist URL, weekday text, etc
+from PlaylistSearch import Playlist # Set URL, weekday text, etc. Plus, download playlists
 
 # Setup AI text generation
 # textgen = textgenrnn()
@@ -95,7 +95,7 @@ weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[
 welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
 timechance = defaulttimechance # Likelihood of mentioning the time [1/[x] chance]
-VERSION_INFO = "21.3.3" # Script version number [YEAR.MONTH.BUILDNUM]
+VERSION_INFO = "21.3.4" # Script version number [YEAR.MONTH.BUILDNUM]
 savedtime = "" # The text version of the time. Used to compare to actual time and determine when to start the next playlist
 
 # Override radio intro if specified by script args
@@ -259,6 +259,7 @@ driver.get(url)
 # Declare lists for playlist video URLs and titles
 playlist=[]
 playlistnames=[]
+countervar = 1 # Used to display how many videos have been gathered
 
 videos=driver.find_elements_by_class_name('style-scope ytd-playlist-video-renderer')
 
@@ -277,9 +278,10 @@ for video in videos:
         name = longname_concat.title()
     else:
         name = longname_concat[:end].title()
-    print(f"Retrieved info for \"{name}\"", end="\n")
+    print(f"[INFO] ({str(countervar)}/100 max) Retrieved info for \"{name}\"", end="\n")
     playlist.append(link)
     playlistnames.append(name)
+    countervar += 1
 
 musicplaylist=vidstrip(playlist) # Strip unneccessary chars from list
 driver.close() # Close the web rendering engine
@@ -290,13 +292,11 @@ print("[INFO] " + "Finished downloading info from music playlist.", end="\n\n")
 # If predownload is enabled, download entire music library ahead of time
 if predownload:
     print("[INFO] " + "Saving music playlist to disk ...", end="\n\n")
-    speaktext("Please enjoy this song while I finish preparing a playlist for you. This may take a second.")
-    downloadlist = []
-    downloadlist.append(str(url))
+    speaktext("Please enjoy this song while I finish preparing a playlist for you. This will take a while.")
+    # Download first 100 videos from playlist.
     ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "geobypass": True, "noplaylist": True, "source_address": "0.0.0.0", "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        ydl.download(downloadlist)
-        # info = ydl.extract_info(musicplaylist, download=True)
+        ydl.download(playlist[:100])
 
 # Next, scrape the PSA playlist (if playlist URL is specified)
 if psaplaylisturl != "":
@@ -313,6 +313,7 @@ if psaplaylisturl != "":
     driver.get(url) # Open URL
     playlist=[] # Clear "playlist" list
     playlistnamesPSA=[]
+    countervar = 1 # Used to display how many videos have been gathered
 
     videos=driver.find_elements_by_class_name('style-scope ytd-playlist-video-renderer')
     for video in videos:
@@ -320,7 +321,8 @@ if psaplaylisturl != "":
         longname2=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("title")
         playlist.append(link2) # Append each URL to the list
         playlistnamesPSA.append(longname2)
-        print(f"Retrieved info for \"{longname2}\"", end="\n")
+        print(f"[INFO] ({str(countervar)}/100 max) Retrieved info for \"{longname2}\"", end="\n")
+        countervar += 1
 
     psaplaylist=vidstrip(playlist)
     driver.close() # Close the web rendering engine

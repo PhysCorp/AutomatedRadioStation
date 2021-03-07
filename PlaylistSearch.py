@@ -1,8 +1,24 @@
+# Import modules
+import youtube_dl # Video downloading
+import os # Run external commands in Linux [1/2]
+import os.path # Run external commands in Linux [2/2]
+
 class Playlist:
     def __init__(self, weekdaynum, timeofdaynum):
         self.weekdaynum = weekdaynum
         self.timeofdaynum = timeofdaynum
     
+    def download_entire_playlist(self, url):
+        # Determine main program directory
+        maindirectory = os.path.dirname(os.path.abspath(__file__)) # The absolute path to this file
+        # Download the playlist with YouTube-DL
+        downloadlist = []
+        downloadlist.append(str(url))
+        ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "geobypass": True, "noplaylist": True, "source_address": "0.0.0.0", "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            ydl.download(downloadlist)
+            # info = ydl.extract_info(musicplaylist, download=True)
+
     def get_URL(self):
         if self.weekdaynum == 0:
             if self.timeofdaynum >= 0 and self.timeofdaynum < 8:
@@ -12,7 +28,7 @@ class Playlist:
             if self.timeofdaynum >= 12 and self.timeofdaynum < 16:
                 return "https://www.youtube.com/playlist?list=PLGBuKfnErZlD_VXiQ8dkn6wdEYHbC3u0i"
             if self.timeofdaynum >= 16 and self.timeofdaynum < 20:
-                return "https://www.youtube.com/playlist?list=PLNxOe-buLm6cz8UQ-hyG1nm3RTNBUBv3K"
+                return "https://www.youtube.com/playlist?list=PLNxOe-buLm6cz8UQ-hyG1nm3RTNBUBv3K" 
             if self.timeofdaynum >= 20 and self.timeofdaynum < 24:
                 return "https://www.youtube.com/playlist?list=PL4033C6D21D7D28AC"
         
@@ -20,7 +36,7 @@ class Playlist:
             if self.timeofdaynum >= 0 and self.timeofdaynum < 8:
                 return "https://www.youtube.com/playlist?list=PLwIEpqpG3Tr8aI2HwnT1YwNtDMVKf8KUO"
             if self.timeofdaynum >= 8 and self.timeofdaynum < 12:
-                return "https://www.youtube.com/playlist?list=PL7IiPgV2w_VZn8EgvZR8ohux9A5uup91n"
+                return "https://www.youtube.com/playlist?list=PL7IiPgV2w_VZn8EgvZR8ohux9A5uup91n" 
             if self.timeofdaynum >= 12 and self.timeofdaynum < 16:
                 return "https://www.youtube.com/playlist?list=PLqEuUDDiORrjQk6OzZ1xhPiVE8DYglCqe"
             if self.timeofdaynum >= 16 and self.timeofdaynum < 20:
@@ -30,33 +46,33 @@ class Playlist:
         
         if self.weekdaynum == 2:
             if self.timeofdaynum >= 0 and self.timeofdaynum < 8:
-                return "https://www.youtube.com/playlist?list=PLMC9KNkIncKtPzgY-5rmhvj7fax8fdxoj"
+                return "https://www.youtube.com/playlist?list=PLMC9KNkIncKtPzgY-5rmhvj7fax8fdxoj" 
             if self.timeofdaynum >= 8 and self.timeofdaynum < 12:
                 return "https://www.youtube.com/playlist?list=PL7IiPgV2w_VaEvjQ8YedFjlcGTbhCze9U"
             if self.timeofdaynum >= 12 and self.timeofdaynum < 16:
-                return "https://www.youtube.com/playlist?list=PL7Q2ZklqtR8B_EAUfXt5tAZkxhCApfFkL"
+                return "https://www.youtube.com/playlist?list=PL7Q2ZklqtR8B_EAUfXt5tAZkxhCApfFkL" 
             if self.timeofdaynum >= 16 and self.timeofdaynum < 20:
-                return "https://www.youtube.com/playlist?list=PLpuDUpB0osJmZQ0a3n6imXirSu0QAZIqF"
+                return "https://www.youtube.com/playlist?list=PLpuDUpB0osJmZQ0a3n6imXirSu0QAZIqF" 
             if self.timeofdaynum >= 20 and self.timeofdaynum < 24:
-                return "https://www.youtube.com/playlist?list=PLetgZKHHaF-Zq1Abh-ZGC4liPd_CV3Uo4"
+                return "https://www.youtube.com/playlist?list=PLetgZKHHaF-Zq1Abh-ZGC4liPd_CV3Uo4" 
 
         if self.weekdaynum == 3:
             if self.timeofdaynum >= 0 and self.timeofdaynum < 8:
                 return "https://www.youtube.com/playlist?list=PL4QNnZJr8sRNKjKzArmzTBAlNYBDN2h-J"
             if self.timeofdaynum >= 8 and self.timeofdaynum < 12:
-                return "https://www.youtube.com/playlist?list=PLV9du90-nOngPg_V4By29gvrovqAguGuN"
+                return "https://www.youtube.com/playlist?list=PLV9du90-nOngPg_V4By29gvrovqAguGuN" 
             if self.timeofdaynum >= 12 and self.timeofdaynum < 16:
-                return "https://www.youtube.com/playlist?list=PLwg8VB64LkBIxBe-PdjFO-7TTMxi9k1ro"
+                return "https://www.youtube.com/playlist?list=PLwg8VB64LkBIxBe-PdjFO-7TTMxi9k1ro" 
             if self.timeofdaynum >= 16 and self.timeofdaynum < 20:
-                return "https://www.youtube.com/playlist?list=PLX9U3Rv7Wy7Wbi3iV2uxFo8BOVHjIehUc"
+                return "https://www.youtube.com/playlist?list=PLX9U3Rv7Wy7Wbi3iV2uxFo8BOVHjIehUc" 
             if self.timeofdaynum >= 20 and self.timeofdaynum < 24:
                 return "https://www.youtube.com/playlist?list=PLrZlOVu0fKqHo1ilGq8vYCuC7mUWej_nP"
 
         if self.weekdaynum == 4:
             if self.timeofdaynum >= 0 and self.timeofdaynum < 8:
-                return "https://www.youtube.com/playlist?list=PLCD0445C57F2B7F41"
+                return "https://www.youtube.com/playlist?list=PLCD0445C57F2B7F41" 
             if self.timeofdaynum >= 8 and self.timeofdaynum < 12:
-                return "https://www.youtube.com/playlist?list=PLGBuKfnErZlAkaUUy57-mR97f8SBgMNHh"
+                return "https://www.youtube.com/playlist?list=PLGBuKfnErZlAkaUUy57-mR97f8SBgMNHh" 
             if self.timeofdaynum >= 12 and self.timeofdaynum < 16:
                 return "https://www.youtube.com/playlist?list=PLGBuKfnErZlCkRRgt06em8nbXvcV5Sae7"
             if self.timeofdaynum >= 16 and self.timeofdaynum < 20:
@@ -68,25 +84,25 @@ class Playlist:
             if self.timeofdaynum >= 0 and self.timeofdaynum < 8:
                 return "https://www.youtube.com/playlist?list=PLxvodScTx2RtAOoajGSu6ad4p8P8uXKQk"
             if self.timeofdaynum >= 8 and self.timeofdaynum < 12:
-                return "https://www.youtube.com/playlist?list=PLrnb8c3hFJatjyJ-wFMuFGANNoo7-LZsG"
+                return "https://www.youtube.com/playlist?list=PLrnb8c3hFJatjyJ-wFMuFGANNoo7-LZsG" 
             if self.timeofdaynum >= 12 and self.timeofdaynum < 16:
-                return "https://www.youtube.com/playlist?list=PL4BrNFx1j7E5qDxSPIkeXgBqX0J7WaB2a"
+                return "https://www.youtube.com/playlist?list=PL4BrNFx1j7E5qDxSPIkeXgBqX0J7WaB2a" 
             if self.timeofdaynum >= 16 and self.timeofdaynum < 20:
-                return "https://www.youtube.com/playlist?list=PL6rfTXx-6y2U9LPalxmyWb4Z9_YDomxfs"
+                return "https://www.youtube.com/playlist?list=PL6rfTXx-6y2U9LPalxmyWb4Z9_YDomxfs" 
             if self.timeofdaynum >= 20 and self.timeofdaynum < 24:
-                return "https://www.youtube.com/playlist?list=PLbcjjn493-S_DcwEVTPkVRz5zZQSo3hjE"
+                return "https://www.youtube.com/playlist?list=PLbcjjn493-S_DcwEVTPkVRz5zZQSo3hjE" 
 
         if self.weekdaynum == 6:
             if self.timeofdaynum >= 0 and self.timeofdaynum < 8:
-                return "https://www.youtube.com/playlist?list=PLWtAfhR9YD1wdKOTDqCFYoFUcThRCfAjp"
+                return "https://www.youtube.com/playlist?list=PLiy0XOfUv4hFHmPs0a8RqkDzfT-2nw7WV"
             if self.timeofdaynum >= 8 and self.timeofdaynum < 12:
-                return "https://www.youtube.com/playlist?list=PL8F6B0753B2CCA128"
+                return "https://www.youtube.com/playlist?list=PL8F6B0753B2CCA128" 
             if self.timeofdaynum >= 12 and self.timeofdaynum < 16:
-                return "https://www.youtube.com/playlist?list=PLDC827E741DA933F0"
+                return "https://www.youtube.com/playlist?list=PLDC827E741DA933F0" 
             if self.timeofdaynum >= 16 and self.timeofdaynum < 20:
-                return "https://www.youtube.com/playlist?list=PLk-_AvR22RueziRgt5GVuirih223y1UNJ"
+                return "https://www.youtube.com/playlist?list=PLk-_AvR22RueziRgt5GVuirih223y1UNJ" 
             if self.timeofdaynum >= 20 and self.timeofdaynum < 24:
-                return "https://www.youtube.com/playlist?list=PL3O5lr1JOzLe6CXisC7PSbveY6IBLxdlg"
+                return "https://www.youtube.com/playlist?list=PL3O5lr1JOzLe6CXisC7PSbveY6IBLxdlg" 
     
     def get_weekdaytext(self):
         if self.weekdaynum == 0:
