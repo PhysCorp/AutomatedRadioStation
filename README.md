@@ -35,8 +35,11 @@ Prereq: Clone the repo. Terminal: "git clone https://github.com/PhysCorp/Automat
 + Radio scripts are stored in the "Speech Scripts" folder. "IntroTextShort.txt" accounts for all the brief welcome messages. "FirstrunPrompts.txt" holds all of the lengthy introductions to the radio segment.
 *Add more lines to either file to increase variety.
 
+# Notes:
+- This program only plays the first 100 videos in a YouTube playlist. If the playlist is larger than 100 videos, all video indeces over 100 will be ignored.
+
 # Known Issue(s):
-- You cannot pre-download YouTube playlists greater than 100 videos.
+- None!
  
 # License info for live playback on my server:
 Intro/Wait music from Jukedeck - create your own at http://jukedeck.com
