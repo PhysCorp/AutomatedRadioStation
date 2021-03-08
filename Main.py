@@ -95,7 +95,7 @@ weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[
 welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
 timechance = defaulttimechance # Likelihood of mentioning the time [1/[x] chance]
-VERSION_INFO = "21.3.4" # Script version number [YEAR.MONTH.BUILDNUM]
+VERSION_INFO = "21.3.5" # Script version number [YEAR.MONTH.BUILDNUM]
 savedtime = "" # The text version of the time. Used to compare to actual time and determine when to start the next playlist
 
 # Override radio intro if specified by script args
@@ -294,7 +294,7 @@ if predownload:
     print("[INFO] " + "Saving music playlist to disk ...", end="\n\n")
     speaktext("Please enjoy this song while I finish preparing a playlist for you. This will take a while.")
     # Download first 100 videos from playlist.
-    ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "geobypass": True, "noplaylist": True, "source_address": "0.0.0.0", "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
+    ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "format": "bestaudio[ext=m4a]", "geobypass": True, "noplaylist": True, "source_address": "0.0.0.0", "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         ydl.download(playlist[:100])
 
@@ -469,7 +469,7 @@ while True:
         # If the file has not been downloaded, do the following
         if not os.path.exists(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=","")):
             # Download the next song as a OGG file with YouTube-DL
-            ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "geobypass": True, "source_address": "0.0.0.0", "noplaylist": True, "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
+            ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "format": "bestaudio[ext=m4a]", "geobypass": True, "source_address": "0.0.0.0", "noplaylist": True, "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 # ydl.download(str(musicplaylist[songselectionint]))
                 info = ydl.extract_info(str(musicplaylist[songselectionint]), download=True)
@@ -690,7 +690,7 @@ while True:
                     playlistitem = str(psaplaylist[random.randint(1,len(psaplaylist)-1)])
                     if not os.path.exists(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=","")):
                         # Download the next song as a OGG file with YouTube-DL
-                        ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedPSAs/%(id)s.%(ext)s", "ignoreerrors": True, "geobypass": True, "source_address": "0.0.0.0", "noplaylist": True, "download_archive": str(maindirectory) + "/PSAArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
+                        ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedPSAs/%(id)s.%(ext)s", "ignoreerrors": True, "format": "bestaudio[ext=m4a]", "geobypass": True, "source_address": "0.0.0.0", "noplaylist": True, "download_archive": str(maindirectory) + "/PSAArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
                         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                             # ydl.download(str(musicplaylist[songselectionint]))
                             info = ydl.extract_info(playlistitem, download=True)
