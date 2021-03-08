@@ -50,7 +50,7 @@ class Playlist:
             if self.timeofdaynum >= 8 and self.timeofdaynum < 12:
                 return "https://www.youtube.com/playlist?list=PL7IiPgV2w_VaEvjQ8YedFjlcGTbhCze9U"
             if self.timeofdaynum >= 12 and self.timeofdaynum < 16:
-                return "https://www.youtube.com/playlist?list=PL7Q2ZklqtR8B_EAUfXt5tAZkxhCApfFkL" 
+                return "https://www.youtube.com/playlist?list=PL7Q2ZklqtR8B_EAUfXt5tAZkxhCApfFkL"
             if self.timeofdaynum >= 16 and self.timeofdaynum < 20:
                 return "https://www.youtube.com/playlist?list=PLpuDUpB0osJmZQ0a3n6imXirSu0QAZIqF" 
             if self.timeofdaynum >= 20 and self.timeofdaynum < 24:
@@ -90,7 +90,7 @@ class Playlist:
             if self.timeofdaynum >= 16 and self.timeofdaynum < 20:
                 return "https://www.youtube.com/playlist?list=PL6rfTXx-6y2U9LPalxmyWb4Z9_YDomxfs" 
             if self.timeofdaynum >= 20 and self.timeofdaynum < 24:
-                return "https://www.youtube.com/playlist?list=PLbcjjn493-S_DcwEVTPkVRz5zZQSo3hjE" 
+                return "https://www.youtube.com/playlist?list=PLbcjjn493-S_DcwEVTPkVRz5zZQSo3hjE"
 
         if self.weekdaynum == 6:
             if self.timeofdaynum >= 0 and self.timeofdaynum < 8:
