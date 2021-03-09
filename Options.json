@@ -8,7 +8,7 @@
   "defaultwelcomechance": 8,
   "defaultweekdaychance": 8,
   "defaulttimechance": 8,
-  "scrollinglimit": 2,
+  "scrollinglimit": 4,
   "city_name": "Auburn Hills",
   "overrideplaylist": "",
   "writeoutput": false,
