@@ -33,8 +33,9 @@ import os.path # Run external commands in Linux [2/2]
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide" # Hide PyGame welcome message
 import pygame # Sound mixing [1/2]
 import pygame.mixer, pygame.time # Sound mixing [2/2]
-from selenium import webdriver # Scrape websites for information [1/2]
-from selenium.webdriver import FirefoxOptions # Scrape websites for information [2/2]
+from selenium import webdriver # Scrape websites for information [1/3]
+from selenium.webdriver import FirefoxOptions # Scrape websites for information [2/3]
+from selenium.webdriver.common.keys import Keys # Inject keystrokes into webdriver [3/3]
 import requests, json # Gather weather info from Openweathermap
 import sys # Used to restart the script at midnight, as well as script args
 import platform # Identify which OS the script is running on
@@ -44,6 +45,7 @@ from google.cloud import texttospeech # [PAID] Google Cloud Text to Speech
 
 # Custom Modules
 from PlaylistSearch import Playlist # Set URL, weekday text, etc. Plus, download playlists
+from WeatherResponses import WeatherSpeech # Return specific sentence based on weather conditions
 
 # Setup AI text generation
 # textgen = textgenrnn()
@@ -84,6 +86,7 @@ overrideplaylist = options_dict["overrideplaylist"] # Override YouTube playlist 
 writeoutput = options_dict["writeoutput"] # Whether or not to print the announcer subtitles to Output.txt
 writesonginfo = options_dict["writesonginfo"] # Whether or not to print the song title to SongInfo.txt
 psaplaylisturl = options_dict["psaplaylisturl"] # YouTube playlist URL for PSAs
+scrollinglimit = options_dict["scrollinglimit"] # Number of times to scroll down on a YouTube Playlist (affects load times, but adds more videos to playlist)
 
 # Declare System Variables
 longspeechstring = "" # Used to append multiple strings before synthesizing audio
@@ -95,7 +98,7 @@ weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[
 welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
 timechance = defaulttimechance # Likelihood of mentioning the time [1/[x] chance]
-VERSION_INFO = "21.3.6" # Script version number [YEAR.MONTH.BUILDNUM]
+VERSION_INFO = "21.3.7" # Script version number [YEAR.MONTH.BUILDNUM]
 savedtime = "" # The text version of the time. Used to compare to actual time and determine when to start the next playlist
 
 # Override radio intro if specified by script args
@@ -261,6 +264,15 @@ playlist=[]
 playlistnames=[]
 countervar = 1 # Used to display how many videos have been gathered
 
+# Continue to scroll down the playlist until most of playlist is in view
+scrollcounter = 0
+while scrollcounter < scrollinglimit:
+    scrolldriver = driver.find_element_by_tag_name("html")
+    scrolldriver.send_keys(Keys.END)
+    time.sleep(2)
+    scrollcounter += 1
+    print(f"[INFO] (Index {scrollcounter}) Scrolling to next page in playlist.", end="\n\n")
+
 videos=driver.find_elements_by_class_name('style-scope ytd-playlist-video-renderer')
 
 # Scrape each video into two lists, video URLs and video titles respectively
@@ -278,10 +290,11 @@ for video in videos:
         name = longname_concat.title()
     else:
         name = longname_concat[:end].title()
-    print(f"[INFO] ({str(countervar)}/100 max) Retrieved info for \"{name}\"", end="\n")
-    playlist.append(link)
-    playlistnames.append(name)
-    countervar += 1
+    if name != "": # If title exists, add name and link to the lists
+        print(f"[INFO] (Video Index {str(countervar)}) Retrieved info for \"{name}\"", end="\n\n")
+        playlist.append(link)
+        playlistnames.append(name)
+        countervar += 1
 
 musicplaylist=vidstrip(playlist) # Strip unneccessary chars from list
 driver.close() # Close the web rendering engine
@@ -315,14 +328,35 @@ if psaplaylisturl != "":
     playlistnamesPSA=[]
     countervar = 1 # Used to display how many videos have been gathered
 
+    # Continue to scroll down the playlist until most of playlist is in view
+    scrollcounter = 0
+    while scrollcounter < scrollinglimit:
+        scrolldriver = driver.find_element_by_tag_name("html")
+        scrolldriver.send_keys(Keys.END)
+        time.sleep(2)
+        scrollcounter += 1
+        print(f"[INFO] (Index {scrollcounter}) Scrolling to next page in playlist.", end="\n\n")
+
     videos=driver.find_elements_by_class_name('style-scope ytd-playlist-video-renderer')
     for video in videos:
         link2=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("href")
         longname2=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("title")
-        playlist.append(link2) # Append each URL to the list
-        playlistnamesPSA.append(longname2)
-        print(f"[INFO] ({str(countervar)}/100 max) Retrieved info for \"{longname2}\"", end="\n")
-        countervar += 1
+        end=longname2.find("(")
+        if end == -1 and end != 0:
+            longname_concat = longname2
+        else:
+            longname_concat = longname2[:end]
+        
+        end=longname_concat.find("[")
+        if end == -1 and end != 0:
+            name = longname_concat.title()
+        else:
+            name = longname_concat[:end].title()
+        if name != "": # If title exists, add name and link to the lists
+            playlist.append(link2) # Append each URL to the list
+            playlistnamesPSA.append(longname2)
+            print(f"[INFO] (Video Index {str(countervar)}) Retrieved info for \"{longname2}\"", end="\n\n")
+            countervar += 1
 
     psaplaylist=vidstrip(playlist)
     driver.close() # Close the web rendering engine
@@ -586,7 +620,11 @@ while True:
                 weather_description = z[0]["description"] 
 
                 # Include weather info in longspeechstring var
-                longspeechstring += " Let's check up on the weather outside! Here in " + str(city_name) + ", current conditions are " + str(weather_description) + ", and the temperature is " + str(round(current_temperature)) + " degrees."
+                longspeechstring += " Let's check up on the weather outside! " 
+                weatherobject = WeatherSpeech(str(weather_description))
+                longspeechstring += weatherobject.returnspeech() + ". "
+                longspeechstring += "The temperature is currently " + str(round(current_temperature)) + " degrees."
+
 
         # Increase the chance to speak the weather info
         if weatherchance > 2:
