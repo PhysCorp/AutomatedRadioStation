@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Automated Radio Statistics</title>
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+	<div class="container-fluid">
+		<a class="navbar-brand" href="#">Radio</a>
+		<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+		<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+		<div class="navbar-nav">
+			<a class="nav-link active" aria-current="page" href="#">Home</a>
+			<a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Song Info</a>
+			<a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Schedule</a>
+			<a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Listen</a>
+			<a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Configuration</a>
+			<a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">About</a>
+		</div>
+		</div>
+	</div>
+	</nav>
+
+<figure class="text-center">
+<h1>Automated Radio Station Info</h1>
+
+<h5>Current playlist: <a href={{PlaylistURL}}>{{PlaylistURL}}</a> </h5>
+<h5>Number of songs played in this playlist: {{SongsPlayedNum}}</h5>
+
+<iframe width="560" height="315" src={{EmbedLink}} frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<h5>Song title: {{SongTitle}}</h5>
+<h5>Current song link: <a href={{SongLink}}>{{SongLink}}</a> </h5>
+
+</figure>
+
+<h5>Weather percentage: {{WeatherDecimal}}</h5>
+<h5>PSA percentage: {{PSADecimal}}</h5>
+<h5>Welcome percentage: {{WelcomeDecimal}}</h5>
+<h5>Weekday percentage: {{WeekdayDecimal}}</h5>
+<h5>Time percentage: {{TimeDecimal}}</h5>
+
+<audio controls>
+	<source src="Radio.mp3" type="audio/mpeg">
+  Your browser does not support the audio element.
+  </audio>
+
+<form action="/echo" method="POST">
+	<input name="text">
+	<input type="submit" value="Comment">
+</form>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js" integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0" crossorigin="anonymous"></script>
+
+</body>
+</html>

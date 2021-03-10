@@ -20,32 +20,39 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+VERSION_INFO = "21.3.8" # Script version number [YEAR.MONTH.BUILDNUM]
 
-# Import Modules
-import random # Random number generation
-import pyttsx3 # Fallback text to speech
-from pydub import AudioSegment, effects # Audio normalization
-import youtube_dl # Video downloading
-import time # Sleep and wait commands
-from datetime import datetime # Tell the date on air, as well as determine which playlist based on weekday and time
-import os # Run external commands in Linux [1/2]
-import os.path # Run external commands in Linux [2/2]
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide" # Hide PyGame welcome message
-import pygame # Sound mixing [1/2]
-import pygame.mixer, pygame.time # Sound mixing [2/2]
-from selenium import webdriver # Scrape websites for information [1/3]
-from selenium.webdriver import FirefoxOptions # Scrape websites for information [2/3]
-from selenium.webdriver.common.keys import Keys # Inject keystrokes into webdriver [3/3]
-import requests, json # Gather weather info from Openweathermap
-import sys # Used to restart the script at midnight, as well as script args
-import platform # Identify which OS the script is running on
-import json # Parse JSON files for API and playlist info
-# from textgenrnn import textgenrnn # AI-based text generation
-from google.cloud import texttospeech # [PAID] Google Cloud Text to Speech
+# Try to import all modules
+try:
+    import random # Random number generation
+    import pyttsx3 # Fallback text to speech
+    from pydub import AudioSegment, effects # Audio normalization
+    import youtube_dl # Video downloading
+    import time # Sleep and wait commands
+    from datetime import datetime # Tell the date on air, as well as determine which playlist based on weekday and time
+    import os # Run external commands in Linux [1/2]
+    import os.path # Run external commands in Linux [2/2]
+    os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide" # Hide PyGame welcome message
+    import pygame # Sound mixing [1/2]
+    import pygame.mixer, pygame.time # Sound mixing [2/2]
+    from selenium import webdriver # Scrape websites for information [1/3]
+    from selenium.webdriver import FirefoxOptions # Scrape websites for information [2/3]
+    from selenium.webdriver.common.keys import Keys # Inject keystrokes into webdriver [3/3]
+    import requests # Gather weather info from Openweathermap
+    import sys # Used to restart the script at midnight, as well as script args
+    import platform # Identify which OS the script is running on
+    import json # Parse JSON files for API and playlist info
+    import subprocess # Run multiple processes in parallel
+    # from textgenrnn import textgenrnn # AI-based text generation
+    from google.cloud import texttospeech # [PAID] Google Cloud Text to Speech
 
-# Custom Modules
-from PlaylistSearch import Playlist # Set URL, weekday text, etc. Plus, download playlists
-from WeatherResponses import WeatherSpeech # Return specific sentence based on weather conditions
+    # Custom Modules
+    from PlaylistSearch import Playlist # Set URL, weekday text, etc. Plus, download playlists
+    from WeatherResponses import WeatherSpeech # Return specific sentence based on weather conditions
+except ImportError:
+    print("[WARN] You are missing one or more libraries. This script cannot continue.")
+    print("Try running in terminal >> python3 -m pip install -r requirements.txt")
+    quit()
 
 # Setup AI text generation
 # textgen = textgenrnn()
@@ -67,26 +74,37 @@ mixer.set_num_channels(10)
 # Determine main program directory
 maindirectory = os.path.dirname(os.path.abspath(__file__)) # The absolute path to this file
 
-# Retrieve options from JSON file
-with open(str(maindirectory) + '/Options.json', 'r') as json_file:
-    options_dict = json.load(json_file)
+# Init WebServer through subprocess
+subprocess.Popen(["python3", str(maindirectory) + "/WebServer.py"])
 
-# Options
-playintro = options_dict["playintro"] # Play the radio show intro on launch
-wavenet = options_dict["wavenet"] # Bool for whether or not to use Google TTS API
-waitforuser = options_dict["waitforuser"] # Bool for whether or not to wait for user input before starting radio
-predownload = options_dict["predownload"] # Bool for whether or not to download the entire music playlist ahead of time
-defaultpsachance = options_dict["defaultpsachance"] # Likelihood of playing a PSA [1/[x] chance]
-defaultweatherchance = options_dict["defaultweatherchance"] # Likelihood of mentioning the weather [1/[x] chance]
-defaultwelcomechance = options_dict["defaultwelcomechance"] # Likelihood of mentioning the welcome message again [1/[x] chance]
-defaultweekdaychance = options_dict["defaultweekdaychance"] # Likelihood of mentioning the weekday again [1/[x] chance]
-defaulttimechance = options_dict["defaulttimechance"] # Likelihood of mentioning the time [1/[x] chance]
-city_name = options_dict["city_name"] # Name of city for weather info
-overrideplaylist = options_dict["overrideplaylist"] # Override YouTube playlist URL for music
-writeoutput = options_dict["writeoutput"] # Whether or not to print the announcer subtitles to Output.txt
-writesonginfo = options_dict["writesonginfo"] # Whether or not to print the song title to SongInfo.txt
-psaplaylisturl = options_dict["psaplaylisturl"] # YouTube playlist URL for PSAs
-scrollinglimit = options_dict["scrollinglimit"] # Number of times to scroll down on a YouTube Playlist (affects load times, but adds more videos to playlist)
+# Retrieve options from JSON file
+try:
+    with open(str(maindirectory) + '/Options.json', 'r') as json_file:
+        options_dict = json.load(json_file)
+
+    # Read options from JSON file
+    playintro = options_dict["playintro"] # Play the radio show intro on launch
+    wavenet = options_dict["wavenet"] # Bool for whether or not to use Google TTS API
+    wavenetpitch = options_dict["wavenet_pitch"] # (Double) pitch value for wavenet voice
+    wavenetspeed = options_dict["wavenet_speed"] # (Double) speed value for wavenet voice
+    wavenetvoice = options_dict["wavenet_voice"] # (String) wavenet voice profile [EX: "en-US-Wavenet-I"]
+    wavenetbackupvoice = options_dict["wavenet_backup_voice"] # (String) wavenet backup voice profile [EX: "en-US-Standard-I"]
+    waitforuser = options_dict["waitforuser"] # Bool for whether or not to wait for user input before starting radio
+    predownload = options_dict["predownload"] # Bool for whether or not to download the entire music playlist ahead of time
+    defaultpsachance = options_dict["defaultpsachance"] # Likelihood of playing a PSA [1/[x] chance]
+    defaultweatherchance = options_dict["defaultweatherchance"] # Likelihood of mentioning the weather [1/[x] chance]
+    defaultwelcomechance = options_dict["defaultwelcomechance"] # Likelihood of mentioning the welcome message again [1/[x] chance]
+    defaultweekdaychance = options_dict["defaultweekdaychance"] # Likelihood of mentioning the weekday again [1/[x] chance]
+    defaulttimechance = options_dict["defaulttimechance"] # Likelihood of mentioning the time [1/[x] chance]
+    city_name = options_dict["city_name"] # Name of city for weather info
+    overrideplaylist = options_dict["overrideplaylist"] # Override YouTube playlist URL for music
+    writeoutput = options_dict["writeoutput"] # Whether or not to print the announcer subtitles to Output.txt
+    writesonginfo = options_dict["writesonginfo"] # Whether or not to print the song title to SongInfo.txt
+    psaplaylisturl = options_dict["psaplaylisturl"] # YouTube playlist URL for PSAs
+    scrollinglimit = options_dict["scrollinglimit"] # Number of times to scroll down on a YouTube Playlist (affects load times, but adds more videos to playlist)
+except FileNotFoundError:
+    print("[WARN] \"Options.json\" file cannot be found. Please redownload the file from Github. Script cannot continue.")
+    quit()
 
 # Declare System Variables
 longspeechstring = "" # Used to append multiple strings before synthesizing audio
@@ -98,7 +116,6 @@ weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[
 welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
 weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
 timechance = defaulttimechance # Likelihood of mentioning the time [1/[x] chance]
-VERSION_INFO = "21.3.7" # Script version number [YEAR.MONTH.BUILDNUM]
 savedtime = "" # The text version of the time. Used to compare to actual time and determine when to start the next playlist
 
 # Override radio intro if specified by script args
@@ -108,42 +125,53 @@ if len(sys.argv) > 1:
         print("[INFO] Script arguments specified playintro to False! Skipping radio intro sequence.", end="\n\n")
 
 # Retrieve API keys from JSON file
-with open(str(maindirectory) + '/APIKeys.json', 'r') as json_file:
-    APIkeys_dict = json.load(json_file)
+try:
+    with open(str(maindirectory) + '/APIKeys.json', 'r') as json_file:
+        APIkeys_dict = json.load(json_file)
+    weatherkey = str(APIkeys_dict["Openweathermap"]) # API key for Openweathermap
+except FileNotFoundError:
+    print("[WARN] \"APIKeys.json\" could not be found. Continuing without API keys ...", end="\n\n")
+    pass
 
-# API Keys
-weatherkey = str(APIkeys_dict["Openweathermap"]) # API key for Openweathermap
-pafyAPIkey = str(APIkeys_dict["YouTube"]) # API key for YouTube video requests
+# Return list of sound filenames, only with extensions .ogg and .wav
+directory= os.path.join(maindirectory,"Assets/SoundEffects")
+try:
+    radiosound_dict = [x for x in os.listdir(directory) if ".wav" or ".WAV" or ".Wav" or ".ogg" or ".OGG" or ".Ogg" in x]
+    radiosoundcount = len(radiosound_dict) - 1
+    if radiosoundcount < 0:
+        radiosoundcount = 0
+except FileNotFoundError:
+    radiosound_dict = []
+    radiosoundcount = 0
 
-# Determine the amount of random radio sounds available
-DIR= os.path.join(maindirectory,"Assets/SoundEffects")
-radiosoundcount = len([name for name in os.listdir(DIR) if os.path.isfile(os.path.join(DIR, name))])
+# Return list of music filenames, only with extensions .ogg and .wav
+directory= os.path.join(maindirectory,"DownloadedSongs")
+try:
+    radiomusic_dict = [x for x in os.listdir(directory) if ".wav" or ".WAV" or ".Wav" or ".ogg" or ".OGG" or ".Ogg" in x]
+    radiomusiccount = len(radiomusic_dict) - 1
+    if radiomusiccount < 0:
+        radiomusiccount = 0
+except FileNotFoundError:
+    radiomusic_dict = []
+    radiomusiccount = 0
 
-# Determine the amount of waiting songs available
-DIR= os.path.join(maindirectory,"Assets/Music")
-radiomusiccount = len([name for name in os.listdir(DIR) if os.path.isfile(os.path.join(DIR, name))])
-
-# Automatically set Google Environment var with API Key based on platform (Win and Mac untested)
-# [ THIS IS AUTOMATICALLY OVERRIDDEN BY STARTRADIO SCRIPT ]
-# if str(platform.system()) == "Linux":
-#     os.system('export GOOGLE_APPLICATION_CREDENTIALS="' + str(maindirectory).replace(" ","\ ") + '/GoogleAPIKey.json"')
-# elif str(platform.system()) == "Darwin":
-#     os.system('export GOOGLE_APPLICATION_CREDENTIALS="' + str(maindirectory) + '/GoogleAPIKey.json"')
-# # elif str(platform.system()) == "Windows":
-#     os.system('export GOOGLE_APPLICATION_CREDENTIALS="' + str(maindirectory) + '\GoogleAPIKey.json"')
+# Custom function to dump some statistics to a JSON file, which is picked up by the Web Server
+def variable_dump():
+    data = {}
+    data["Statistics"] = []
+    data["Statistics"].append({"PlaylistURL": str(playlisturl), "SongsPlayedNum": len(listPlayedSongs),"SongTitle": str(playlistnames[songselectionint]),"EmbedLink": str(musicplaylist[songselectionint]).replace("https://www.youtube.com/watch?v=","https://www.youtube.com/embed/"),"SongLink": str(musicplaylist[songselectionint]), "WeatherDecimal": (round(1/weatherchance)*100), "PSADecimal": (round(1/psachance)*100), "WelcomeDecimal": (round(1/welcomechance)*100), "WeekdayDecimal": (round(1/weekdaychance)*100), "TimeDecimal": (round(1/timechance)*100)})
+    with open(str(maindirectory) + "/VariableDump.json", "w") as jsonfile:
+        json.dump(data, jsonfile)
 
 # Google Cloud TTS Function to Generate Wavenet Samples
 def text_to_wav(text, earlyfade = False):
-    # If the current time is in the early morning, save money by switching to Standard voice
+    # If the current time is in the early morning, save money by switching to backup voice
     timeobject = datetime.now()
     currenttime = int(timeobject.strftime("%H"))
     if currenttime >= 0 and currenttime < 8:
-        voice_name = "en-US-Standard-I"
+        voice_name = wavenetbackupvoice
     else:
-        voice_name = "en-US-Wavenet-I"
-    
-    # Uncomment the following line to force Standard voice
-    # voice_name = "en-US-Standard-I"
+        voice_name = wavenetvoice
 
     language_code = "-".join(voice_name.split("-")[:2])
     text_input = texttospeech.SynthesisInput(text=text)
@@ -152,8 +180,8 @@ def text_to_wav(text, earlyfade = False):
     )
     audio_config = texttospeech.AudioConfig(
         audio_encoding=texttospeech.AudioEncoding.LINEAR16,
-        speaking_rate=1.00,
-        pitch=-5
+        speaking_rate=wavenetspeed,
+        pitch=wavenetpitch
     )
 
     client = texttospeech.TextToSpeechClient()
@@ -204,13 +232,14 @@ def speaktext(message, earlyfade = False):
 speaktext("The radio will be back online in a moment!")
 
 # Start a random radio "waiting" song
-waitingsound = mixer.Sound(str(maindirectory) + "/Assets/Music/" + str(random.randint(1,radiomusiccount)) + ".WAV")
-waitingsound.set_volume(0.4)
-mixer.Channel(1).play(waitingsound, fade_ms=1000, loops=999)
+if radiomusiccount > 0:
+    waitingsound = mixer.Sound(str(maindirectory) + "/DownloadedSongs/" + str(radiomusic_dict[random.randint(0,radiomusiccount)]))
+    waitingsound.set_volume(0.4)
+    mixer.Channel(1).play(waitingsound, fade_ms=1000, loops=999)
 
 # State any errors/warnings to user
 if weatherkey == "":
-    print("[INFO] " + "You have not provided an Openweathermap API key. The API key is required to give weather info.", end="\n\n")
+    print("[WARN] " + "You have not provided an Openweathermap API key. The API key is required to give weather info.", end="\n\n")
 
 # Custom function to remove unneccessary chars from YouTube video ID after "&"
 def vidstrip(playlist):
@@ -241,7 +270,7 @@ weekdaytext = playlistselection.get_weekdaytext()
 # If the playlist URL is still blank, warn the user and use a fallback playlist
 if url == "":
     url = "https://www.youtube.com/playlist?list=PLHL1i3oc4p0o76QOZ_BLZwjDb1x21azmC"
-    print("[INFO] " + "You didn't specify a music playlist for today's date! Using fallback playlist.", end="\n\n")
+    print("[WARN] " + "You didn't specify a music playlist for today's date! Using fallback playlist.", end="\n\n")
 
 # If specified, override the weekday playlist with something else
 if overrideplaylist:
@@ -258,6 +287,7 @@ driver = webdriver.Firefox(options=opts)
 
 # Open playlist URL in headless Firefox
 driver.get(url)
+playlisturl = url
 
 # Declare lists for playlist video URLs and titles
 playlist=[]
@@ -372,24 +402,44 @@ print("[INFO] " + "Finished downloading info from PSA playlist. Starting radio .
 # This is used for text variation to make the announcer seem more lifelike.
 
 # Intro Text Short (Single sentence to welcome the listener)
-fileIntroTextShort = open(str(maindirectory) + "/SpeechScripts/IntroTextShort.txt", "r")
-speechIntroTextShort = fileIntroTextShort.readlines()
-fileIntroTextShort.close()
+try:
+    fileIntroTextShort = open(str(maindirectory) + "/SpeechScripts/IntroTextShort.txt", "r")
+    speechIntroTextShort = fileIntroTextShort.readlines()
+    fileIntroTextShort.close()
+except FileNotFoundError:
+    print("[WARN] \"IntroTextShort.txt\" cannot be found. Try redownloading the program? Continuing anyway ...", end="\n\n")
+    speechIntroTextShort = "You are listening to PhysCorp's Automated Radio Station."
+    pass
 
 # First Run Prompts (Describes the radio station in-detail)
-fileFirstrunPrompts = open(str(maindirectory) + "/SpeechScripts/FirstrunPrompts.txt", "r")
-speechFirstrunPrompts = fileFirstrunPrompts.readlines()
-fileFirstrunPrompts.close()
+try:
+    fileFirstrunPrompts = open(str(maindirectory) + "/SpeechScripts/FirstrunPrompts.txt", "r")
+    speechFirstrunPrompts = fileFirstrunPrompts.readlines()
+    fileFirstrunPrompts.close()
+except FileNotFoundError:
+    print("[WARN] \"FirstrunPrompts.txt\" cannot be found. Try redownloading the program? Continuing anyway ...", end="\n\n")
+    speechFirstrunPrompts = "Welcome to the fully automated radio station."
+    pass
 
 # Song Transitions (Variations on describing which song comes next)
-fileSongTransitions = open(str(maindirectory) + "/SpeechScripts/SongTransitions.txt", "r")
-speechSongTransitions = fileSongTransitions.readlines()
-fileSongTransitions.close()
+try:
+    fileSongTransitions = open(str(maindirectory) + "/SpeechScripts/SongTransitions.txt", "r")
+    speechSongTransitions = fileSongTransitions.readlines()
+    fileSongTransitions.close()
+except FileNotFoundError:
+    print("[WARN] \"SongTransitions.txt\" cannot be found. Try redownloading the program? Continuing anyway ...", end="\n\n")
+    speechFirstrunPrompts = "Up next is "
+    pass
 
 # Song END Transitions (Variations on what song you just heard)
-fileSongEndTransitions = open(str(maindirectory) + "/SpeechScripts/SongEndTransitions.txt", "r")
-speechSongEndTransitions = fileSongEndTransitions.readlines()
-fileSongEndTransitions.close()
+try:
+    fileSongEndTransitions = open(str(maindirectory) + "/SpeechScripts/SongEndTransitions.txt", "r")
+    speechSongEndTransitions = fileSongEndTransitions.readlines()
+    fileSongEndTransitions.close()
+except FileNotFoundError:
+    print("[WARN] \"SongEndTransitions.txt\" cannot be found. Try redownloading the program? Continuing anyway ...", end="\n\n")
+    speechFirstrunPrompts = "You just heard "
+    pass
 
 # Prepare the intro lines with synthesized voice
 longspeechstring = "" # Clear the longspeechstring var
@@ -406,7 +456,8 @@ longspeechstring += " Version " + str(VERSION_INFO) + "."
 longspeechstring += " " + str(speechFirstrunPrompts[random.randint(0,len(speechFirstrunPrompts)-1)])
 
 # Stop the waiting sound, fading out for 1 second
-waitingsound.fadeout(1000)
+if radiomusiccount > 0:
+    waitingsound.fadeout(1000)
 
 # Wait for the user to press ENTER if they specified waiting in Options.json
 if waitforuser:
@@ -423,7 +474,7 @@ while True:
         if playintro == True:
             # Play random radio sound before speaking (if file exists)
             if radiosoundcount >= 1:
-                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount)) + ".WAV")
+                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(radiosound_dict[random.randint(0,radiosoundcount)]))
                 sound.set_volume(0.3)
                 mixer.Channel(2).play(sound, fade_ms=0)
                 waittime = (sound.get_length()*1000)/2
@@ -433,19 +484,21 @@ while True:
                 time.sleep(waittime/1000)
             
             # Play the background waiting sound while the announcer speaks
-            newwaitingsound = mixer.Sound(str(maindirectory) + "/Assets/Music/" + str(random.randint(1,radiomusiccount)) + ".WAV")
-            newwaitingsound.set_volume(0.2)
-            mixer.Channel(3).play(newwaitingsound, fade_ms=1000)
+            if radiomusiccount > 0:
+                newwaitingsound = mixer.Sound(str(maindirectory) + "/DownloadedSongs/" + str(radiomusic_dict[random.randint(0,radiomusiccount)]))
+                newwaitingsound.set_volume(0.1)
+                mixer.Channel(3).play(newwaitingsound, fade_ms=1000)
 
             # Play the synthesized voice
             speaktext(longspeechstring)
 
             # Stop the waiting sound, fading out for 1 second
-            newwaitingsound.fadeout(1000)
+            if radiomusiccount > 0:
+                newwaitingsound.fadeout(1000)
 
             # Play random radio sound after speaking (if file exists)
             if radiosoundcount >= 1:
-                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount)) + ".WAV")
+                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(radiosound_dict[random.randint(0,radiosoundcount)]))
                 sound.set_volume(0.3)
                 mixer.Channel(4).play(sound, fade_ms=0)
                 waittime = (sound.get_length()*1000)/2
@@ -478,7 +531,7 @@ while True:
 
             # Play random radio sound after speaking (if file exists)
             if radiosoundcount >= 1:
-                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount)) + ".WAV")
+                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(radiosound_dict[random.randint(0,radiosoundcount)]))
                 sound.set_volume(0.3)
                 mixer.Channel(4).play(sound, fade_ms=0)
                 waittime = (sound.get_length()*1000)/2
@@ -507,31 +560,35 @@ while True:
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 # ydl.download(str(musicplaylist[songselectionint]))
                 info = ydl.extract_info(str(musicplaylist[songselectionint]), download=True)
-
-        # Normalize the audio
-        beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
-        aftersound = effects.normalize(beforesound)  
-        aftersound.export(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg")
+            # Normalize the audio
+            print("[INFO] Normalizing audio ...", end="\n\n")
+            beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
+            aftersound = effects.normalize(beforesound)  
+            aftersound.export(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg")
 
         # Play the downloaded song with pygame mixer
-        music = mixer.Sound(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=",""))
-        music.set_volume(0.7)
-        mixer.Channel(5).play(music, fade_ms=5000)
-        waittime = (music.get_length()*1000) - 5000
-        if waittime < 0:
-            waittime = music.get_length()*1000
-        if waittime > 600000: # If song is greater than 10 minutes
-            waittime = 600000 # Set length to maximum of 10 minutes
-            longspeechstring += "That's enough of that song. "
-        # pygame.time.wait(waittime)
-        # Show operator that song is playing in stdout
-        print("[INFO] " + "Currently playing " + str(playlistnames[songselectionint]) + ".", end="\n\n")
-        print("[DEBUG - SONG PATH] " + str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), end="\n\n")
-        time.sleep(waittime/1000)
-        music.fadeout(5000)
-
-        # Song that just played
-        longspeechstring += str(speechSongEndTransitions[random.randint(0,len(speechSongEndTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
+        try:
+            music = mixer.Sound(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=",""))
+            music.set_volume(0.7)
+            mixer.Channel(5).play(music, fade_ms=5000)
+            waittime = (music.get_length()*1000) - 5000
+            if waittime < 0:
+                waittime = music.get_length()*1000
+            if waittime > 600000: # If song is greater than 10 minutes
+                waittime = 600000 # Set length to maximum of 10 minutes
+                longspeechstring += "That's enough of that song. "
+            # pygame.time.wait(waittime)
+            # Show operator that song is playing in stdout
+            print("[INFO] " + "Currently playing " + str(playlistnames[songselectionint]) + ".", end="\n\n")
+            print("[DEBUG - SONG PATH] " + str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), end="\n\n")
+            variable_dump() # Dump variables to JSON file for use in WebServer
+            time.sleep(waittime/1000)
+            music.fadeout(5000)
+            # Song that just played
+            longspeechstring += str(speechSongEndTransitions[random.randint(0,len(speechSongEndTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
+        except (RuntimeError, TypeError, NameError, OSError, KeyError, IndexError, LookupError):
+            speaktext("It looks like that song isn't available.")
+            pass
 
         # Listening to PhysCorp's Automated Station & Version Info
         longspeechstring += " " + str(speechIntroTextShort[random.randint(0,len(speechIntroTextShort)-1)])
@@ -620,7 +677,7 @@ while True:
                 weather_description = z[0]["description"] 
 
                 # Include weather info in longspeechstring var
-                longspeechstring += " Let's check up on the weather outside! " 
+                longspeechstring += " Let's check up on the weather outside! Here in " + str(city_name) + ", " 
                 weatherobject = WeatherSpeech(str(weather_description))
                 longspeechstring += weatherobject.returnspeech() + ". "
                 longspeechstring += "The temperature is currently " + str(round(current_temperature)) + " degrees."
@@ -667,7 +724,7 @@ while True:
 
         # Play random radio sound before speaking if file exists
         if radiosoundcount >= 1:
-            sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount)) + ".WAV")
+            sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(radiosound_dict[random.randint(0,radiosoundcount)]))
             sound.set_volume(0.3)
             mixer.Channel(6).play(sound, fade_ms=0)
             waittime = (sound.get_length()*1000)/2
@@ -677,14 +734,16 @@ while True:
             time.sleep(waittime/1000)
         
         # Play the background waiting sound while the announcer speaks
-            newwaitingsoundtwo = mixer.Sound(str(maindirectory) + "/Assets/Music/" + str(random.randint(1,radiomusiccount)) + ".WAV")
-            newwaitingsoundtwo.set_volume(0.2)
+        if radiomusiccount > 0:
+            newwaitingsoundtwo = mixer.Sound(str(maindirectory) + "/DownloadedSongs/" + str(radiomusic_dict[random.randint(0,radiomusiccount)]))
+            newwaitingsoundtwo.set_volume(0.1)
             mixer.Channel(7).play(newwaitingsoundtwo, fade_ms=1000)
 
         # If the time is midnight (if stored weekday info doesn't match current weekday info), restart the script to gather new playlist info
         if savedweekday != datetime.today().weekday():
             speaktext("It's midnight. I'm switching to a new playlist. Please wait.")
-            newwaitingsoundtwo.fadeout(1000)
+            if radiomusiccount > 0:
+                newwaitingsoundtwo.fadeout(1000)
             os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
         
         # Compared the savedtime VAR to the current time text. If mismatch, restart the station with a new playlist
@@ -716,7 +775,8 @@ while True:
         speaktext(longspeechstring)
 
         # Stop the waiting sound, fading out for 1 second
-        newwaitingsoundtwo.fadeout(1000)
+        if radiomusiccount > 0:
+            newwaitingsoundtwo.fadeout(1000)
 
         # Play the PSA if triggered
         if playpsa == True:
@@ -732,11 +792,11 @@ while True:
                         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                             # ydl.download(str(musicplaylist[songselectionint]))
                             info = ydl.extract_info(playlistitem, download=True)
-
-                    # Normalize the audio
-                    beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
-                    aftersound = effects.normalize(beforesound)  
-                    aftersound.export(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg")
+                        # Normalize the audio
+                        print("[INFO] Normalizing audio ...", end="\n\n")
+                        beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
+                        aftersound = effects.normalize(beforesound)  
+                        aftersound.export(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg")
 
                     # Play the downloaded song with pygame mixer
                     psa = mixer.Sound(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""))
@@ -759,7 +819,7 @@ while True:
 
         # Play random radio sound after speaking if file exists
         if radiosoundcount >= 1:
-            sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(random.randint(1,radiosoundcount)) + ".WAV")
+            sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(radiosound_dict[random.randint(0,radiosoundcount)]))
             sound.set_volume(0.3)
             mixer.Channel(8).play(sound, fade_ms=0)
             waittime = (sound.get_length()*1000)/2
@@ -769,9 +829,6 @@ while True:
             time.sleep(waittime/1000)
     except (RuntimeError, TypeError, NameError, OSError, KeyError, IndexError, LookupError):
         # Say that something has gone wrong
-        speaktext("It looks like that song isn't available. Please wait while I find another song.")
-        # longspeechstring = "" # Reset longspeechstring
-        # playintro = True # Failsafe, run through intro again
-        # pass
+        speaktext("It looks like something has gone wrong. Please wait while I restart the station.")
         os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
         # os.execv(sys.executable, ['python3'] + sys.argv + ["skipintro"]) # Restart the script by issuing a terminal command, skipping the intro
