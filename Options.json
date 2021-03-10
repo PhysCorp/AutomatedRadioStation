@@ -1,6 +1,10 @@
 {
   "playintro": true,
   "wavenet": false,
+  "wavenet_pitch": -5.00,
+  "wavenet_speed": 1.00,
+  "wavenet_voice": "en-US-Wavenet-I",
+  "wavenet_backup_voice": "en-US-Standard-I",
   "predownload": true,
   "waitforuser": false,
   "defaultpsachance": 12,
