@@ -6,3 +6,4 @@ requests
 youtube-dl
 google-cloud-texttospeech
 textgenrnn
+flask
