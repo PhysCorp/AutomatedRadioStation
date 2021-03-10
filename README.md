@@ -25,10 +25,11 @@ Prereq: Clone the repo. Terminal: "git clone https://github.com/PhysCorp/Automat
 1) Make sure Python 3.8.5+ and the additional packages are installed! Terminal: "sudo apt install python3 python3-pip firefox firefox-geckodriver python3-venv espeak mbrola mbrola-us2 mbrola-us3 ffmpeg"
 2) Change to project directory, then use PIP to install required files. Terminal: "cd AutomatedRadioStation && pip3 install -r requirements.txt"
 3) Configure any speech scripts/playlists (See "Configuration Tab Below").
-4) Add your API Keys from Openweathermap, YouTube Data, and Google Cloud Text to Speech to the respective files (APIKeys.json and GoogleAPIKey.json). Keys aren't required, but you will experience limited functionality.
+4) Add your API Keys from Openweathermap and Google Cloud Text to Speech to the respective files (APIKeys.json and GoogleAPIKey.json). Keys aren't required, but you will experience limited functionality.
 5) Run the program! Terminal: "bash StartRadio.sh"
 
 # Configuration:
+[This section is old. Stay tuned for a better description.]
 + Check out the Options.json file to configure the program. There, you can adjust the PSA playlist info, speech provider, and more!
 + Sound Effects are stored in Assets/SoundEffects. Place any .WAV files in that directory, then rename the file to a number (Example: "1.WAV"). The radio will play a random sound effect before the announcer speaks.
 + Waiting/Background Music is stored in Assets/Music. Place any .WAV files in that directory, then rename the file to a number (Example: "1.WAV"). The radio will play a random file when waiting or the announcer is speaking.
