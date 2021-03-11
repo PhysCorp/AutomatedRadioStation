@@ -1,33 +1,54 @@
-# Try to import all modules
 try:
-    from flask import Flask, request, render_template # Web-management engine
-    import json
-except ImportError:
-    print("[WARN] You are missing one or more libraries. This script cannot continue.")
-    print("Try running in terminal >> python3 -m pip install -r requirements.txt")
-    quit()
-
-# Init Flask
-app = Flask(__name__)
-
-@app.route("/")
-def index():
-    # Open JSON file
+    # Try to import all modules
     try:
-        with open("VariableDump.json", "r") as json_file:
-            statistics_dict_parent = json.load(json_file)
-            statistics_dict = statistics_dict_parent["Statistics"][0]
-            json_file.close()
-    except FileNotFoundError:
-        statistics_dict = []
-        pass
-    return render_template("index.html", PlaylistURL=str(statistics_dict["PlaylistURL"]), SongsPlayedNum=int(statistics_dict["SongsPlayedNum"]), SongTitle=str(statistics_dict["SongTitle"]), EmbedLink=str(statistics_dict["EmbedLink"]), SongLink=str(statistics_dict["SongLink"]), WeatherDecimal=int(statistics_dict["WeatherDecimal"]), PSADecimal=int(statistics_dict["PSADecimal"]), WelcomeDecimal=int(statistics_dict["WelcomeDecimal"]), WeekdayDecimal=int(statistics_dict["WeekdayDecimal"]), TimeDecimal=int(statistics_dict["TimeDecimal"]))
+        from flask import Flask, request, render_template # Web-management engine
+        import json
+        from waitress import serve
+        import os.path
+    except ImportError:
+        print("[WARN] You are missing one or more libraries. This script cannot continue.")
+        print("Try running in terminal >> python3 -m pip install -r requirements.txt")
+        quit()
 
-@app.route("/echo", methods=["POST"])
-def echo():
-    command = request.form["text"]
-    print(command)
-    return index()
+    # Determine main program directory
+    maindirectory = os.path.dirname(os.path.abspath(__file__)) # The absolute path to this file
 
-if __name__ == "__main__":
-    app.run(debug="False", port=4024, host="0.0.0.0")
+    # Custom Functions
+    def suggestion_dump(link):
+        data = {}
+        data["Suggestion"] = []
+        data["Suggestion"].append({"Link": str(link)})
+        with open(str(maindirectory) + "/SuggestionDump.json", "w") as jsonfile:
+            json.dump(data, jsonfile)
+
+    # Init Flask
+    app = Flask(__name__)
+
+    print("[INFO] WebServer is now running. View station info and suggest songs here with port 4024.", end="\n\n")
+
+    @app.route("/")
+    def index():
+        # Open JSON file
+        try:
+            with open(str(maindirectory) + "/VariableDump.json", "r") as json_file:
+                statistics_dict_parent = json.load(json_file)
+                statistics_dict = statistics_dict_parent["Statistics"][0]
+                json_file.close()
+            return render_template("index.html", PlaylistURL=statistics_dict["PlaylistURL"], SongsPlayedNum=statistics_dict["SongsPlayedNum"], SongTitle=statistics_dict["SongTitle"], EmbedLink=statistics_dict["EmbedLink"], SongLink=statistics_dict["SongLink"], WeatherDecimal=statistics_dict["WeatherDecimal"], PSADecimal=statistics_dict["PSADecimal"], WelcomeDecimal=statistics_dict["WelcomeDecimal"], WeekdayDecimal=statistics_dict["WeekdayDecimal"], TimeDecimal=statistics_dict["TimeDecimal"])
+        except FileNotFoundError:
+            return render_template("index.html")
+
+    @app.route("/", methods=["POST"])
+    def echo():
+        command = request.form["text"]
+        suggestion_dump(command)
+        print("[INFO] Suggestion received!")
+        return index()
+
+    if __name__ == "__main__":
+        # app.run(debug="False", port=4024, host="0.0.0.0") # [No longer used. Run app through Flask]
+        serve(app, host="0.0.0.0", port=4024) # Start app with waitress
+
+except OSError:
+    print("[INFO] The webserver is already running. This instance will exit.", end="\n\n")
+    quit()

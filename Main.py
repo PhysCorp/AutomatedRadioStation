@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-VERSION_INFO = "21.3.8" # Script version number [YEAR.MONTH.BUILDNUM]
+VERSION_INFO = "21.3.9" # Script version number [YEAR.MONTH.BUILDNUM]
 
 # Try to import all modules
 try:
@@ -84,6 +84,7 @@ try:
 
     # Read options from JSON file
     playintro = options_dict["playintro"] # Play the radio show intro on launch
+    receivesuggestions = options_dict["suggestions"] # Bool for whether or not to incorporate song suggestions from the audience
     wavenet = options_dict["wavenet"] # Bool for whether or not to use Google TTS API
     wavenetpitch = options_dict["wavenet_pitch"] # (Double) pitch value for wavenet voice
     wavenetspeed = options_dict["wavenet_speed"] # (Double) speed value for wavenet voice
@@ -111,6 +112,7 @@ longspeechstring = "" # Used to append multiple strings before synthesizing audi
 playpsa = False # Bool value for whether or not a PSA will play immediately following a song
 listPlayedSongs = [] # List stores all song numbers that have already been played
 potentialsong = 1 # The index of the song to be played
+songsuggestion = False # Whether or not a suggested song if about to play
 psachance = defaultpsachance # Likelihood of playing a PSA [1/[x] chance]
 weatherchance = defaultweatherchance # Likelihood of mentioning the weather [1/[x] chance]
 welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome message again [1/[x] chance]
@@ -159,9 +161,27 @@ except FileNotFoundError:
 def variable_dump():
     data = {}
     data["Statistics"] = []
-    data["Statistics"].append({"PlaylistURL": str(playlisturl), "SongsPlayedNum": len(listPlayedSongs),"SongTitle": str(playlistnames[songselectionint]),"EmbedLink": str(musicplaylist[songselectionint]).replace("https://www.youtube.com/watch?v=","https://www.youtube.com/embed/"),"SongLink": str(musicplaylist[songselectionint]), "WeatherDecimal": (round(1/weatherchance)*100), "PSADecimal": (round(1/psachance)*100), "WelcomeDecimal": (round(1/welcomechance)*100), "WeekdayDecimal": (round(1/weekdaychance)*100), "TimeDecimal": (round(1/timechance)*100)})
+    if songsuggestion:
+        data["Statistics"].append({"PlaylistURL": str(playlisturl), "SongsPlayedNum": len(listPlayedSongs),"SongTitle": str(playlistnames[songselectionint]),"EmbedLink": videoID.replace("https://www.youtube.com/watch?v=","https://www.youtube.com/embed/"),"SongLink": videoID, "WeatherDecimal": (round(1/weatherchance)*100), "PSADecimal": (round(1/psachance)*100), "WelcomeDecimal": (round(1/welcomechance)*100), "WeekdayDecimal": (round(1/weekdaychance)*100), "TimeDecimal": (round(1/timechance)*100)})
+    else:
+        data["Statistics"].append({"PlaylistURL": str(playlisturl), "SongsPlayedNum": len(listPlayedSongs),"SongTitle": "Audience Suggestion","EmbedLink": videoID.replace("https://www.youtube.com/watch?v=","https://www.youtube.com/embed/"),"SongLink": videoID, "WeatherDecimal": (round(1/weatherchance)*100), "PSADecimal": (round(1/psachance)*100), "WelcomeDecimal": (round(1/welcomechance)*100), "WeekdayDecimal": (round(1/weekdaychance)*100), "TimeDecimal": (round(1/timechance)*100)})
     with open(str(maindirectory) + "/VariableDump.json", "w") as jsonfile:
         json.dump(data, jsonfile)
+
+# Custom function to retrieve video suggestion links
+def parse_suggestions():
+    try:
+        with open(str(maindirectory) + "/SuggestionDump.json", "r") as json_file:
+            suggestion_dict_parent = json.load(json_file)
+            suggestion_dict = suggestion_dict_parent["Suggestion"][0]
+            json_file.close()
+        os.remove(str(maindirectory) + "/SuggestionDump.json")
+        newsuggestion = str(suggestion_dict["Link"])
+        print(f"[INFO] New suggestion found! {newsuggestion}", end="\n\n")
+        return newsuggestion
+    except FileNotFoundError:
+        print("[INFO] No new suggestions yet.", end="\n\n")
+        return ""
 
 # Google Cloud TTS Function to Generate Wavenet Samples
 def text_to_wav(text, earlyfade = False):
@@ -553,22 +573,46 @@ while True:
         # Clear the longspeechstring var
         longspeechstring = ""
 
+        if not songsuggestion:
+            videoID = str(musicplaylist[songselectionint])
+        else:
+            videoID = potentialsuggestion
+            # ADD A SAFEGUARD HERE TO PREVENT ANY LINK FROM TRYING TO PLAY
+            if videoID.find("youtube.com/watch?v=") == -1 and videoID.find("youtu.be/") == -1:
+                # Link is NOT valid
+                print("[INFO] The suggested song is not a valid YouTube link.", end="\n\n")
+                speaktext("Never mind. It looks like the suggested link is not valid. I'm resuming normal playback.")
+                # Randomly choose a new song from the playlist
+                if len(listPlayedSongs) >= len(musicplaylist) - 1: # If the music list has been exhausted
+                    listPlayedSongs.clear() # Clear the list and start again
+                while potentialsong in listPlayedSongs: # If the song has been chosen already,
+                    potentialsong = random.randint(1,len(musicplaylist)-1) # Randomly select a new song from the playlist
+                listPlayedSongs.append(potentialsong) # Add the song index to the list of played songs
+                songselectionint = potentialsong # Set the next song to the one that was randomly chosen
+                videoID = str(musicplaylist[songselectionint])
+            else:
+                # Link is valid
+                videoID = potentialsuggestion.replace("https://www.youtube.com/watch?v=","").replace("https://youtu.be/","")
+
+        # Reset songsuggestion var
+        songsuggestion = False
+
         # If the file has not been downloaded, do the following
-        if not os.path.exists(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=","")):
+        if not os.path.exists(str(str(maindirectory) + "/DownloadedSongs/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=","")):
             # Download the next song as a OGG file with YouTube-DL
             ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "format": "bestaudio[ext=m4a]", "geobypass": True, "source_address": "0.0.0.0", "noplaylist": True, "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                # ydl.download(str(musicplaylist[songselectionint]))
-                info = ydl.extract_info(str(musicplaylist[songselectionint]), download=True)
+                # ydl.download(videoID)
+                info = ydl.extract_info(videoID, download=True)
             # Normalize the audio
             print("[INFO] Normalizing audio ...", end="\n\n")
-            beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
+            beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedSongs/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
             aftersound = effects.normalize(beforesound)  
-            aftersound.export(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg")
+            aftersound.export(str(str(maindirectory) + "/DownloadedSongs/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg")
 
         # Play the downloaded song with pygame mixer
         try:
-            music = mixer.Sound(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=",""))
+            music = mixer.Sound(str(str(maindirectory) + "/DownloadedSongs/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""))
             music.set_volume(0.7)
             mixer.Channel(5).play(music, fade_ms=5000)
             waittime = (music.get_length()*1000) - 5000
@@ -580,7 +624,7 @@ while True:
             # pygame.time.wait(waittime)
             # Show operator that song is playing in stdout
             print("[INFO] " + "Currently playing " + str(playlistnames[songselectionint]) + ".", end="\n\n")
-            print("[DEBUG - SONG PATH] " + str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[songselectionint]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), end="\n\n")
+            print("[DEBUG - SONG PATH] " + str(str(maindirectory) + "/DownloadedSongs/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""), end="\n\n")
             variable_dump() # Dump variables to JSON file for use in WebServer
             time.sleep(waittime/1000)
             music.fadeout(5000)
@@ -687,16 +731,24 @@ while True:
         if weatherchance > 2:
             weatherchance -= 1
         
-        # Randomly choose a new song from the playlist
-        if len(listPlayedSongs) >= len(musicplaylist) - 1: # If the music list has been exhausted
-            listPlayedSongs.clear() # Clear the list and start again
-        while potentialsong in listPlayedSongs: # If the song has been chosen already,
-            potentialsong = random.randint(1,len(musicplaylist)-1) # Randomly select a new song from the playlist
-        listPlayedSongs.append(potentialsong) # Add the song index to the list of played songs
-        songselectionint = potentialsong # Set the next song to the one that was randomly chosen
-        print("[INFO] " + "List of completed song indexes:\n\t" + str(listPlayedSongs), end="\n\n") # Show list of played song numbers
-        print("[INFO] " + "Likelihood VARs:\n\tPSA: [1/" + str(psachance) + "]\tWeather: [1/" + str(weatherchance) + "]\tWelcomeMessage: [1/" + str(welcomechance) + "]\tWeekdayMessage: [1/" + str(weekdaychance) + "]\tTime: [1/" + str(timechance) + "]", end="\n\n") # Show chance VARs
-        
+        potentialsuggestion = parse_suggestions()
+        if potentialsuggestion != "" and receivesuggestions:
+            songsuggestion = True
+        else:
+            songsuggestion = False
+
+        # If there isn't a new song suggestion, choose a song from the playlist
+        if not songsuggestion:
+            # Randomly choose a new song from the playlist
+            if len(listPlayedSongs) >= len(musicplaylist) - 1: # If the music list has been exhausted
+                listPlayedSongs.clear() # Clear the list and start again
+            while potentialsong in listPlayedSongs: # If the song has been chosen already,
+                potentialsong = random.randint(1,len(musicplaylist)-1) # Randomly select a new song from the playlist
+            listPlayedSongs.append(potentialsong) # Add the song index to the list of played songs
+            songselectionint = potentialsong # Set the next song to the one that was randomly chosen
+            print("[INFO] " + "List of completed song indexes:\n\t" + str(listPlayedSongs), end="\n\n") # Show list of played song numbers
+            print("[INFO] " + "Likelihood VARs:\n\tPSA: [1/" + str(psachance) + "]\tWeather: [1/" + str(weatherchance) + "]\tWelcomeMessage: [1/" + str(welcomechance) + "]\tWeekdayMessage: [1/" + str(weekdaychance) + "]\tTime: [1/" + str(timechance) + "]", end="\n\n") # Show chance VARs
+
         # If the playlist isn't overridden, chance to add the weekday text to longspeechstring var
         if not overrideplaylist:
             if random.randint(0,weekdaychance) == 1:
@@ -709,7 +761,11 @@ while True:
 
         # Add the next song info to the longspeechstring var
         # longspeechstring += " " + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
-        longspeechstring += " " + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
+        if not songsuggestion:
+            longspeechstring += " " + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
+        else:
+            # Select the suggested song for playback, and include a disclaimer
+            longspeechstring += " It looks like there's a new song suggestion from one of our listeners. Just a disclaimer, I don't monitor the content of these videos. That being said, let's listen."
 
         # Chance to play a PSA
         if random.randint(0,psachance) == 1 and psaplaylisturl != "":
@@ -790,7 +846,7 @@ while True:
                         # Download the next song as a OGG file with YouTube-DL
                         ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedPSAs/%(id)s.%(ext)s", "ignoreerrors": True, "format": "bestaudio[ext=m4a]", "geobypass": True, "source_address": "0.0.0.0", "noplaylist": True, "download_archive": str(maindirectory) + "/PSAArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
                         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                            # ydl.download(str(musicplaylist[songselectionint]))
+                            # ydl.download(videoID)
                             info = ydl.extract_info(playlistitem, download=True)
                         # Normalize the audio
                         print("[INFO] Normalizing audio ...", end="\n\n")
