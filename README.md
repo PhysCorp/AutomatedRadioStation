@@ -38,36 +38,5 @@ Prereq: Clone the repo. Terminal: "git clone https://github.com/PhysCorp/Automat
 
 # Known Issue(s):
 - None!
- 
-# License info for live playback on my server:
-Intro/Wait music from Jukedeck - create your own at http://jukedeck.com
-
-Rising Tide (faster) by Kevin MacLeod
-Link: https://incompetech.filmmusic.io/song/5028-rising-tide-faster-
-License: https://filmmusic.io/standard-license
-
-Simplex by Kevin MacLeod
-Link: https://incompetech.filmmusic.io/song/4367-simplex
-License: https://filmmusic.io/standard-license
-
-Seven March by Kevin MacLeod
-Link: https://incompetech.filmmusic.io/song/4338-seven-march
-License: https://filmmusic.io/standard-license
-
-Secret of Tiki Island by Kevin MacLeod
-Link: https://incompetech.filmmusic.io/song/4331-secret-of-tiki-island
-License: https://filmmusic.io/standard-license
-
-Professor Umlaut by Kevin MacLeod
-Link: https://incompetech.filmmusic.io/song/4243-professor-umlaut
-License: https://filmmusic.io/standard-license
-
-Private Eye by Kevin MacLeod
-Link: https://incompetech.filmmusic.io/song/4240-private-eye
-License: https://filmmusic.io/standard-license
-
-Prelude and Action by Kevin MacLeod
-Link: https://incompetech.filmmusic.io/song/4236-prelude-and-action
-License: https://filmmusic.io/standard-license
 
 <img src="https://github.com/PhysCorp/AutomatedRadioStation/blob/main/frame.png" width="128" height="128">
