@@ -161,7 +161,7 @@ except FileNotFoundError:
 def variable_dump():
     data = {}
     data["Statistics"] = []
-    if songsuggestion:
+    if not songsuggestion:
         data["Statistics"].append({"PlaylistURL": str(playlisturl), "SongsPlayedNum": len(listPlayedSongs),"SongTitle": str(playlistnames[songselectionint]),"EmbedLink": videoID.replace("https://www.youtube.com/watch?v=","https://www.youtube.com/embed/"),"SongLink": videoID, "WeatherDecimal": (round(1/weatherchance)*100), "PSADecimal": (round(1/psachance)*100), "WelcomeDecimal": (round(1/welcomechance)*100), "WeekdayDecimal": (round(1/weekdaychance)*100), "TimeDecimal": (round(1/timechance)*100)})
     else:
         data["Statistics"].append({"PlaylistURL": str(playlisturl), "SongsPlayedNum": len(listPlayedSongs),"SongTitle": "Audience Suggestion","EmbedLink": videoID.replace("https://www.youtube.com/watch?v=","https://www.youtube.com/embed/"),"SongLink": videoID, "WeatherDecimal": (round(1/weatherchance)*100), "PSADecimal": (round(1/psachance)*100), "WelcomeDecimal": (round(1/welcomechance)*100), "WeekdayDecimal": (round(1/weekdaychance)*100), "TimeDecimal": (round(1/timechance)*100)})
