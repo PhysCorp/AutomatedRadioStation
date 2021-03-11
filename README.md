@@ -6,7 +6,7 @@ A Radio Host that's Entirely Automated!
 # Listen Now [LIVE] (Explicit):
 http://listen.physcorp.com/
 
-# Suggest Songs (Experimental Website)
+# Suggest Songs (Experimental):
 http://radio.physcorp.com
 
 # What is it?
