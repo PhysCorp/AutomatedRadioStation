@@ -6,6 +6,9 @@ A Radio Host that's Entirely Automated!
 # Listen Now [LIVE] (Explicit):
 http://listen.physcorp.com/
 
+# Suggest Songs (Experimental Website)
+http://radio.physcorp.com
+
 # What is it?
 [*This is a fun project for me to better understand Python!*]
 PhysCorp's Automated Radio Station is a new take on auto-DJ services. The station is run entirely by computers. Unlike traditional radio stations that use an auto-DJ, this station serves to include commentary between songs like a live announcer!
