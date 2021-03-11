@@ -1,5 +1,6 @@
 {
   "playintro": true,
+  "suggestions": true,
   "wavenet": false,
   "wavenet_pitch": -5.00,
   "wavenet_speed": 1.00,
