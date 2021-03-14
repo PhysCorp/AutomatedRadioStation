@@ -5,10 +5,15 @@ try:
         import json
         from waitress import serve
         import os.path
+        import sys
     except ImportError:
         print("[WARN] You are missing one or more libraries. This script cannot continue.")
         print("Try running in terminal >> python3 -m pip install -r requirements.txt")
         quit()
+
+    # Set port number according to script arguments
+    if len(sys.argv) > 1:
+        webport = int(sys.argv[-1])
 
     # Determine main program directory
     maindirectory = os.path.dirname(os.path.abspath(__file__)) # The absolute path to this file
@@ -24,7 +29,7 @@ try:
     # Init Flask
     app = Flask(__name__)
 
-    print("[INFO] WebServer is now running. View station info and suggest songs here with port 4024.", end="\n\n")
+    print(f"[INFO] WebServer is now running. View station info and suggest songs here with port {webport}.", end="\n\n")
 
     @app.route("/")
     def index():
@@ -47,7 +52,7 @@ try:
 
     if __name__ == "__main__":
         # app.run(debug="False", port=4024, host="0.0.0.0") # [No longer used. Run app through Flask]
-        serve(app, host="0.0.0.0", port=4024) # Start app with waitress
+        serve(app, host="0.0.0.0", port=webport) # Start app with waitress
 
 except OSError:
     print("[INFO] The webserver is already running. This instance will exit.", end="\n\n")

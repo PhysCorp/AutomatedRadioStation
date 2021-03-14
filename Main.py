@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-VERSION_INFO = "21.3.9" # Script version number [YEAR.MONTH.BUILDNUM]
+VERSION_INFO = "21.3.11" # Script version number [YEAR.MONTH.BUILDNUM]
 
 # Try to import all modules
 try:
@@ -43,6 +43,7 @@ try:
     import platform # Identify which OS the script is running on
     import json # Parse JSON files for API and playlist info
     import subprocess # Run multiple processes in parallel
+    import gc # Memory management for audio processing
     # from textgenrnn import textgenrnn # AI-based text generation
     from google.cloud import texttospeech # [PAID] Google Cloud Text to Speech
 
@@ -74,9 +75,6 @@ mixer.set_num_channels(10)
 # Determine main program directory
 maindirectory = os.path.dirname(os.path.abspath(__file__)) # The absolute path to this file
 
-# Init WebServer through subprocess
-subprocess.Popen(["python3", str(maindirectory) + "/WebServer.py"])
-
 # Retrieve options from JSON file
 try:
     with open(str(maindirectory) + '/Options.json', 'r') as json_file:
@@ -85,6 +83,7 @@ try:
     # Read options from JSON file
     playintro = options_dict["playintro"] # Play the radio show intro on launch
     receivesuggestions = options_dict["suggestions"] # Bool for whether or not to incorporate song suggestions from the audience
+    webport = options_dict["port"] # The port number for the webserver
     wavenet = options_dict["wavenet"] # Bool for whether or not to use Google TTS API
     wavenetpitch = options_dict["wavenet_pitch"] # (Double) pitch value for wavenet voice
     wavenetspeed = options_dict["wavenet_speed"] # (Double) speed value for wavenet voice
@@ -119,6 +118,12 @@ welcomechance = defaultwelcomechance # Likelihood of mentioning the welcome mess
 weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday again [1/[x] chance]
 timechance = defaulttimechance # Likelihood of mentioning the time [1/[x] chance]
 savedtime = "" # The text version of the time. Used to compare to actual time and determine when to start the next playlist
+
+# Init WebServer through subprocess, if port is selected in Options.json
+if isinstance(webport, int):
+    subprocess.Popen(["python3", str(maindirectory) + "/WebServer.py", str(webport)])
+else:
+    print("[INFO] A port for WebServer has not been set. WebServer is disabled.", end="\n\n")
 
 # Override radio intro if specified by script args
 if len(sys.argv) > 1:
@@ -352,14 +357,41 @@ driver.close() # Close the web rendering engine
 # Print message to stdout
 print("[INFO] " + "Finished downloading info from music playlist.", end="\n\n")
 
+# Open SongArchive file to avoid excessive YouTube-DL calls
+try:
+    fileSongArchive = open(str(maindirectory) + "/SongArchive.txt", "r")
+    songarchive = fileSongArchive.readlines()
+    fileSongArchive.close()
+except FileNotFoundError:
+    songarchive = []
+    pass
+
 # If predownload is enabled, download entire music library ahead of time
 if predownload:
     print("[INFO] " + "Saving music playlist to disk ...", end="\n\n")
     speaktext("Please enjoy this song while I finish preparing a playlist for you. This will take a while.")
-    # Download first 100 videos from playlist.
     ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "format": "bestaudio[ext=m4a]", "geobypass": True, "noplaylist": True, "source_address": "0.0.0.0", "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        ydl.download(playlist[:100])
+        videocounter = 0
+        videolist = []
+        while videocounter <= len(musicplaylist):
+            videolist.clear()
+            videolist.append(str(musicplaylist[videocounter]))
+            checkstring = "youtube " + str(musicplaylist[videocounter]).replace("https://www.youtube.com/watch?v=","") + "\n"
+            if checkstring not in songarchive:
+                ydl.download(videolist)
+                try:
+                    beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[videocounter]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
+                    aftersound = effects.normalize(beforesound)  
+                    aftersound.export(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[videocounter]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg")
+                    del beforesound
+                    del aftersound
+                    gc.collect() # Free memory
+                    print(f"[INFO] Downloaded ({videocounter + 1}/{len(musicplaylist)}) Normalizing audio ...", end="\n\n")
+                except FileNotFoundError:
+                    print(f"[INFO] Failed to download ({videocounter + 1}/{len(musicplaylist)}).", end="\n\n")
+                    pass
+            videocounter += 1
 
 # Next, scrape the PSA playlist (if playlist URL is specified)
 if psaplaylisturl != "":
@@ -609,6 +641,9 @@ while True:
             beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedSongs/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
             aftersound = effects.normalize(beforesound)  
             aftersound.export(str(str(maindirectory) + "/DownloadedSongs/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg")
+            del beforesound
+            del aftersound
+            gc.collect() # Free memory
 
         # Play the downloaded song with pygame mixer
         try:
@@ -853,6 +888,9 @@ while True:
                         beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
                         aftersound = effects.normalize(beforesound)  
                         aftersound.export(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg")
+                        del beforesound
+                        del aftersound
+                        gc.collect() # Free memory
 
                     # Play the downloaded song with pygame mixer
                     psa = mixer.Sound(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""))
