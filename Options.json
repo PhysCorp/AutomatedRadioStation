@@ -1,6 +1,7 @@
 {
   "playintro": true,
   "suggestions": true,
+  "port": 4024,
   "wavenet": false,
   "wavenet_pitch": -5.00,
   "wavenet_speed": 1.00,
