@@ -1,6 +1,7 @@
 {
   "playintro": true,
   "suggestions": true,
+  "normalize_audio": false,
   "port": 4024,
   "wavenet": false,
   "wavenet_pitch": -5.00,
