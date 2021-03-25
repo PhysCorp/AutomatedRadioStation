@@ -9,3 +9,4 @@ textgenrnn
 flask
 waitress
 dashing
+blessed
