@@ -1,5 +1,3 @@
-# NOT YET IMPLEMENTED, JUST RETURNS SAME STRING
-
 class WeatherSpeech:
     def __init__(self, weathertext):
         self.weathertext = weathertext
