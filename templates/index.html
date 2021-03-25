@@ -14,7 +14,7 @@
 
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
 	<div class="container-fluid">
-		<a class="navbar-brand" href="#">Radio</a>
+		<a class="navbar-brand" href="#"><img src="Icon.png" alt="" width="32" height="32"></a>
 		<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
 		<span class="navbar-toggler-icon"></span>
 		</button>
@@ -32,32 +32,89 @@
 	</nav>
 
 <figure class="text-center">
-<h1>Automated Radio Station Info</h1>
-
-<h5>Current playlist: <a href={{PlaylistURL}}>{{PlaylistURL}}</a> </h5>
-<h5>Number of songs played in this playlist: {{SongsPlayedNum}}</h5>
-
+<h1><span class="badge bg-secondary">Automated Radio Station Info</span></h1>
 <iframe width="560" height="315" src={{EmbedLink}} frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-<h5>Song title: {{SongTitle}}</h5>
-<h5>Current song link: <a href={{SongLink}}>{{SongLink}}</a> </h5>
-
 </figure>
 
-<h5>Weather percentage: {{WeatherDecimal}}</h5>
-<h5>PSA percentage: {{PSADecimal}}</h5>
-<h5>Welcome percentage: {{WelcomeDecimal}}</h5>
-<h5>Weekday percentage: {{WeekdayDecimal}}</h5>
-<h5>Time percentage: {{TimeDecimal}}</h5>
-
-<audio controls>
-	<source src="Radio.mp3" type="audio/mpeg">
-  Your browser does not support the audio element.
-  </audio>
-
 <form action="/" method="POST">
-	<input name="text">
-	<input type="submit" value="Suggest Video">
-</form>
+	<div class="mb-3">
+	  <label for="songsuggestionform" class="form-label">Suggest a YouTube link</label>
+	  <input name="videosuggestion" type="text" class="form-control" id="songsuggestionform" aria-describedby="songInfo">
+	  <div id="songInfo" class="form-text">Paste the link to a YouTube video to be played on the radio.</div>
+	</div>
+
+	<button type="submit" class="btn btn-primary">Suggest Video</button>
+  </form>
+
+<h1><span class="badge bg-secondary">Song/Playlist Info</span></h1>
+
+<table class="table">
+	<thead>
+	  <tr>
+		<th scope="col">Song Info</th>
+		<th scope="col">Value</th>
+	  </tr>
+	</thead>
+	<tbody>
+	  <tr>
+		<th scope="row">Current Playlist</th>
+		<td><a href={{PlaylistURL}}>{{PlaylistURL}}</a></td>
+	  </tr>
+	  <tr>
+		<th scope="row">Number of songs played so far</th>
+		<td>{{SongsPlayedNum}}</td>
+	  </tr>
+	  <tr>
+		<th scope="row">Song Title</th>
+		<td>{{SongTitle}}</td>
+	  </tr>
+	  <tr>
+		<th scope="row">Song Link</th>
+		<td><a href={{SongLink}}>{{SongLink}}</a></td>
+	  </tr>
+	</tbody>
+  </table>
+
+<h1><span class="badge bg-secondary">Variable Info</span></h1>
+
+<table class="table">
+	<thead>
+	  <tr>
+		<th scope="col">#</th>
+		<th scope="col">Variable</th>
+		<th scope="col">Percentage</th>
+	  </tr>
+	</thead>
+	<tbody>
+	  <tr>
+		<th scope="row">1</th>
+		<td>Weather</td>
+		<td>{{WeatherDecimal}}</td>
+	  </tr>
+	  <tr>
+		<th scope="row">2</th>
+		<td>PSA</td>
+		<td>{{PSADecimal}}</td>
+	  </tr>
+	  <tr>
+		<th scope="row">3</th>
+		<td>Welcome</td>
+		<td>{{WelcomeDecimal}}</td>
+	  </tr>
+	  <tr>
+		<th scope="row">4</th>
+		<td>Weekday</td>
+		<td>{{WeekdayDecimal}}</td>
+	  </tr>
+	  <tr>
+		<th scope="row">5</th>
+		<td>Time</td>
+		<td>{{TimeDecimal}}</td>
+	  </tr>
+	</tbody>
+  </table>
+
+<img src="frame.png" alt="QR Code">
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js" integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0" crossorigin="anonymous"></script>
 

@@ -1,6 +1,7 @@
 # Import libraries
 from pydub import AudioSegment, effects
 import os.path
+import gc
 
 # Determine main program directory
 maindirectory = os.path.dirname(os.path.abspath(__file__)) # The absolute path to this file
@@ -20,6 +21,11 @@ for file in music_dict:
     rawsound = AudioSegment.from_file(maindirectory + "/DownloadedSongs/" + str(file), "ogg")  
     normalizedsound = effects.normalize(rawsound)  
     normalizedsound.export(maindirectory + "/DownloadedSongs/" + str(file), format="ogg")
+    rawsound.close()
+    normalizedsound.close()
+    del rawsound
+    del normalizedsound
+    gc.collect() # Free memory
     counter += 1
 
 print("Success!")

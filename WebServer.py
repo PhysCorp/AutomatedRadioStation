@@ -45,7 +45,7 @@ try:
 
     @app.route("/", methods=["POST"])
     def echo():
-        command = request.form["text"]
+        command = request.form["videosuggestion"]
         suggestion_dump(command)
         print("[INFO] Suggestion received!")
         return index()

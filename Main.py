@@ -20,7 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-VERSION_INFO = "21.3.11" # Script version number [YEAR.MONTH.BUILDNUM]
+VERSION_INFO = "21.3.12" # Script version number [YEAR.MONTH.BUILDNUM]
+
+"""
+CURRENT KNOWN ISSUES:
+- Audio normalizing causes a memory leak
+"""
 
 # Try to import all modules
 try:
@@ -44,12 +49,15 @@ try:
     import json # Parse JSON files for API and playlist info
     import subprocess # Run multiple processes in parallel
     import gc # Memory management for audio processing
+    import math # Used in console dashboard
+    from dashing import * # Console dashboard. Provides pretty text output to stdout.
     # from textgenrnn import textgenrnn # AI-based text generation
     from google.cloud import texttospeech # [PAID] Google Cloud Text to Speech
 
     # Custom Modules
     from PlaylistSearch import Playlist # Set URL, weekday text, etc. Plus, download playlists
     from WeatherResponses import WeatherSpeech # Return specific sentence based on weather conditions
+    # from ConsoleUI import Dashboard # Custom dashboard for stdout
 except ImportError:
     print("[WARN] You are missing one or more libraries. This script cannot continue.")
     print("Try running in terminal >> python3 -m pip install -r requirements.txt")
@@ -83,7 +91,10 @@ try:
     # Read options from JSON file
     playintro = options_dict["playintro"] # Play the radio show intro on launch
     receivesuggestions = options_dict["suggestions"] # Bool for whether or not to incorporate song suggestions from the audience
+    normalize_bool = options_dict["normalize_audio"] # Bool for whether or not to normalize each song with PyDub
     webport = options_dict["port"] # The port number for the webserver
+    offlinemode = options_dict["offline_mode"] # Bool to prevent making API calls of any kind
+    maxsonglength = options_dict["max_song_length"]
     wavenet = options_dict["wavenet"] # Bool for whether or not to use Google TTS API
     wavenetpitch = options_dict["wavenet_pitch"] # (Double) pitch value for wavenet voice
     wavenetspeed = options_dict["wavenet_speed"] # (Double) speed value for wavenet voice
@@ -119,11 +130,13 @@ weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday agai
 timechance = defaulttimechance # Likelihood of mentioning the time [1/[x] chance]
 savedtime = "" # The text version of the time. Used to compare to actual time and determine when to start the next playlist
 
-# Init WebServer through subprocess, if port is selected in Options.json
-if isinstance(webport, int):
-    subprocess.Popen(["python3", str(maindirectory) + "/WebServer.py", str(webport)])
-else:
-    print("[INFO] A port for WebServer has not been set. WebServer is disabled.", end="\n\n")
+# If online, init web server
+if not offlinemode:
+    # Init WebServer through subprocess, if port is selected in Options.json
+    if isinstance(webport, int):
+        subprocess.Popen(["python3", str(maindirectory) + "/WebServer.py", str(webport)])
+    else:
+        print("[INFO] A port for WebServer has not been set. WebServer is disabled.", end="\n\n")
 
 # Override radio intro if specified by script args
 if len(sys.argv) > 1:
@@ -144,9 +157,9 @@ except FileNotFoundError:
 directory= os.path.join(maindirectory,"Assets/SoundEffects")
 try:
     radiosound_dict = [x for x in os.listdir(directory) if ".wav" or ".WAV" or ".Wav" or ".ogg" or ".OGG" or ".Ogg" in x]
-    radiosoundcount = len(radiosound_dict) - 1
-    if radiosoundcount < 0:
-        radiosoundcount = 0
+    radiosoundcount = len(radiosound_dict)
+    if radiosoundcount < 1:
+        radiosoundcount = 1
 except FileNotFoundError:
     radiosound_dict = []
     radiosoundcount = 0
@@ -155,9 +168,9 @@ except FileNotFoundError:
 directory= os.path.join(maindirectory,"DownloadedSongs")
 try:
     radiomusic_dict = [x for x in os.listdir(directory) if ".wav" or ".WAV" or ".Wav" or ".ogg" or ".OGG" or ".Ogg" in x]
-    radiomusiccount = len(radiomusic_dict) - 1
-    if radiomusiccount < 0:
-        radiomusiccount = 0
+    radiomusiccount = len(radiomusic_dict)
+    if radiomusiccount < 1:
+        radiomusiccount = 1
 except FileNotFoundError:
     radiomusic_dict = []
     radiomusiccount = 0
@@ -167,9 +180,9 @@ def variable_dump():
     data = {}
     data["Statistics"] = []
     if not songsuggestion:
-        data["Statistics"].append({"PlaylistURL": str(playlisturl), "SongsPlayedNum": len(listPlayedSongs),"SongTitle": str(playlistnames[songselectionint]),"EmbedLink": videoID.replace("https://www.youtube.com/watch?v=","https://www.youtube.com/embed/"),"SongLink": videoID, "WeatherDecimal": (round(1/weatherchance)*100), "PSADecimal": (round(1/psachance)*100), "WelcomeDecimal": (round(1/welcomechance)*100), "WeekdayDecimal": (round(1/weekdaychance)*100), "TimeDecimal": (round(1/timechance)*100)})
+        data["Statistics"].append({"PlaylistURL": str(playlisturl), "SongsPlayedNum": len(listPlayedSongs),"SongTitle": str(playlistnames[songselectionint]),"EmbedLink": videoID.replace("https://www.youtube.com/watch?v=","https://www.youtube.com/embed/"),"SongLink": videoID, "WeatherDecimal": (1/weatherchance)*100, "PSADecimal": (1/psachance)*100, "WelcomeDecimal": (1/welcomechance)*100, "WeekdayDecimal": (1/weekdaychance)*100, "TimeDecimal": (1/timechance)*100})
     else:
-        data["Statistics"].append({"PlaylistURL": str(playlisturl), "SongsPlayedNum": len(listPlayedSongs),"SongTitle": "Audience Suggestion","EmbedLink": videoID.replace("https://www.youtube.com/watch?v=","https://www.youtube.com/embed/"),"SongLink": videoID, "WeatherDecimal": (round(1/weatherchance)*100), "PSADecimal": (round(1/psachance)*100), "WelcomeDecimal": (round(1/welcomechance)*100), "WeekdayDecimal": (round(1/weekdaychance)*100), "TimeDecimal": (round(1/timechance)*100)})
+        data["Statistics"].append({"PlaylistURL": str(playlisturl), "SongsPlayedNum": len(listPlayedSongs),"SongTitle": "Audience Suggestion","EmbedLink": videoID.replace("https://www.youtube.com/watch?v=","https://www.youtube.com/embed/").replace("https://youtu.be/","https://www.youtube.com/embed/"),"SongLink": videoID, "WeatherDecimal": (1/weatherchance)*100, "PSADecimal": (1/psachance)*100, "WelcomeDecimal": (1/welcomechance)*100, "WeekdayDecimal": (1/weekdaychance)*100, "TimeDecimal": (1/timechance)*100})
     with open(str(maindirectory) + "/VariableDump.json", "w") as jsonfile:
         json.dump(data, jsonfile)
 
@@ -231,14 +244,14 @@ def text_to_wav(text, earlyfade = False):
         time.sleep(voice.get_length())
 
 # Custom function to just speak text with system TTS
-def speaktext(message, earlyfade = False):
+def speaktext(message, earlyfade=False):
     print("[SPEECH] " + "\"" + str(message) + "\"", end="\n\n") # Print the message contents to stdout
     # If enabled, write message contents to text file for use in OBS Studio
-    if writeoutput == True:
+    if writeoutput:
         with open(str(maindirectory) + "/Output.txt","w") as fileoutput:
             fileoutput.write("\n" + str(message))
             fileoutput.close()
-    if wavenet == True:
+    if wavenet and not offlinemode:
         if earlyfade:
             text_to_wav(str(message), earlyfade=True)
         else:
@@ -258,7 +271,7 @@ speaktext("The radio will be back online in a moment!")
 
 # Start a random radio "waiting" song
 if radiomusiccount > 0:
-    waitingsound = mixer.Sound(str(maindirectory) + "/DownloadedSongs/" + str(radiomusic_dict[random.randint(0,radiomusiccount)]))
+    waitingsound = mixer.Sound(str(maindirectory) + "/DownloadedSongs/" + str(radiomusic_dict[random.randint(0,radiomusiccount-1)]))
     waitingsound.set_volume(0.4)
     mixer.Channel(1).play(waitingsound, fade_ms=1000, loops=999)
 
@@ -288,6 +301,7 @@ currenttime = int(timeobject.strftime("%H"))
 # Set the appropriate playlist according to the weekday using custom PlaylistSearch function w/ classes
 playlistselection = Playlist(datetime.today().weekday(), currenttime)
 url = playlistselection.get_URL()
+playlistID = url.replace("https://www.youtube.com/playlist?list=","")
 savedweekday = playlistselection.get_savedweekday()
 savedtime = playlistselection.get_savedtime()
 weekdaytext = playlistselection.get_weekdaytext()
@@ -342,9 +356,9 @@ for video in videos:
     
     end=longname_concat.find("[")
     if end == -1 and end != 0:
-        name = longname_concat.title()
+        name = longname_concat
     else:
-        name = longname_concat[:end].title()
+        name = longname_concat[:end]
     if name != "": # If title exists, add name and link to the lists
         print(f"[INFO] (Video Index {str(countervar)}) Retrieved info for \"{name}\"", end="\n\n")
         playlist.append(link)
@@ -367,7 +381,7 @@ except FileNotFoundError:
     pass
 
 # If predownload is enabled, download entire music library ahead of time
-if predownload:
+if predownload and not offlinemode:
     print("[INFO] " + "Saving music playlist to disk ...", end="\n\n")
     speaktext("Please enjoy this song while I finish preparing a playlist for you. This will take a while.")
     ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "format": "bestaudio[ext=m4a]", "geobypass": True, "noplaylist": True, "source_address": "0.0.0.0", "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
@@ -381,12 +395,15 @@ if predownload:
             if checkstring not in songarchive:
                 ydl.download(videolist)
                 try:
-                    beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[videocounter]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
-                    aftersound = effects.normalize(beforesound)  
-                    aftersound.export(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[videocounter]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg")
-                    del beforesound
-                    del aftersound
-                    gc.collect() # Free memory
+                    if normalize_bool:
+                        beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[videocounter]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
+                        aftersound = effects.normalize(beforesound)  
+                        aftersound.export(str(str(maindirectory) + "/DownloadedSongs/" + str(musicplaylist[videocounter]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg", tags={"title": "AutomatedRadioStation"})
+                        beforesound.close()
+                        aftersound.close()
+                        del beforesound
+                        del aftersound
+                        gc.collect() # Free memory
                     print(f"[INFO] Downloaded ({videocounter + 1}/{len(musicplaylist)}) Normalizing audio ...", end="\n\n")
                 except FileNotFoundError:
                     print(f"[INFO] Failed to download ({videocounter + 1}/{len(musicplaylist)}).", end="\n\n")
@@ -431,9 +448,9 @@ if psaplaylisturl != "":
         
         end=longname_concat.find("[")
         if end == -1 and end != 0:
-            name = longname_concat.title()
+            name = longname_concat
         else:
-            name = longname_concat[:end].title()
+            name = longname_concat[:end]
         if name != "": # If title exists, add name and link to the lists
             playlist.append(link2) # Append each URL to the list
             playlistnamesPSA.append(longname2)
@@ -526,7 +543,7 @@ while True:
         if playintro == True:
             # Play random radio sound before speaking (if file exists)
             if radiosoundcount >= 1:
-                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(radiosound_dict[random.randint(0,radiosoundcount)]))
+                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(radiosound_dict[random.randint(0,radiosoundcount-1)]))
                 sound.set_volume(0.3)
                 mixer.Channel(2).play(sound, fade_ms=0)
                 waittime = (sound.get_length()*1000)/2
@@ -537,7 +554,7 @@ while True:
             
             # Play the background waiting sound while the announcer speaks
             if radiomusiccount > 0:
-                newwaitingsound = mixer.Sound(str(maindirectory) + "/DownloadedSongs/" + str(radiomusic_dict[random.randint(0,radiomusiccount)]))
+                newwaitingsound = mixer.Sound(str(maindirectory) + "/DownloadedSongs/" + str(radiomusic_dict[random.randint(0,radiomusiccount-1)]))
                 newwaitingsound.set_volume(0.1)
                 mixer.Channel(3).play(newwaitingsound, fade_ms=1000)
 
@@ -550,7 +567,7 @@ while True:
 
             # Play random radio sound after speaking (if file exists)
             if radiosoundcount >= 1:
-                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(radiosound_dict[random.randint(0,radiosoundcount)]))
+                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(radiosound_dict[random.randint(0,radiosoundcount-1)]))
                 sound.set_volume(0.3)
                 mixer.Channel(4).play(sound, fade_ms=0)
                 waittime = (sound.get_length()*1000)/2
@@ -583,7 +600,7 @@ while True:
 
             # Play random radio sound after speaking (if file exists)
             if radiosoundcount >= 1:
-                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(radiosound_dict[random.randint(0,radiosoundcount)]))
+                sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(radiosound_dict[random.randint(0,radiosoundcount-1)]))
                 sound.set_volume(0.3)
                 mixer.Channel(4).play(sound, fade_ms=0)
                 waittime = (sound.get_length()*1000)/2
@@ -605,45 +622,69 @@ while True:
         # Clear the longspeechstring var
         longspeechstring = ""
 
+        suggestioninfo = [{"title": ""}]
+        newsong = False
         if not songsuggestion:
             videoID = str(musicplaylist[songselectionint])
         else:
             videoID = potentialsuggestion
-            # ADD A SAFEGUARD HERE TO PREVENT ANY LINK FROM TRYING TO PLAY
             if videoID.find("youtube.com/watch?v=") == -1 and videoID.find("youtu.be/") == -1:
                 # Link is NOT valid
                 print("[INFO] The suggested song is not a valid YouTube link.", end="\n\n")
                 speaktext("Never mind. It looks like the suggested link is not valid. I'm resuming normal playback.")
-                # Randomly choose a new song from the playlist
-                if len(listPlayedSongs) >= len(musicplaylist) - 1: # If the music list has been exhausted
-                    listPlayedSongs.clear() # Clear the list and start again
-                while potentialsong in listPlayedSongs: # If the song has been chosen already,
-                    potentialsong = random.randint(1,len(musicplaylist)-1) # Randomly select a new song from the playlist
-                listPlayedSongs.append(potentialsong) # Add the song index to the list of played songs
-                songselectionint = potentialsong # Set the next song to the one that was randomly chosen
-                videoID = str(musicplaylist[songselectionint])
+                newsong = True
             else:
                 # Link is valid
-                videoID = potentialsuggestion.replace("https://www.youtube.com/watch?v=","").replace("https://youtu.be/","")
+                shortvideoID = potentialsuggestion.replace("https://www.youtube.com/watch?v=","").replace("https://youtu.be/","")
+                # end=shortvideoID.find("&")
+                # videoID = str(shortvideoID[:end+1])
+
+                # Download the next song info with YouTube-DL
+                ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "format": "bestaudio[ext=m4a]", "geobypass": True, "source_address": "0.0.0.0", "noplaylist": True, "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
+                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                    suggestioninfo = ydl.extract_info(videoID, download=False)
+                
+                # If the video has an age limit, skip it and find a new song
+                if suggestioninfo["age_limit"] > 0:
+                    print("[INFO] The suggested song has an age limit.", end="\n\n")
+                    speaktext("Never mind. It looks like the suggested song has an age limit and is not suitable for the radio. I'm resuming normal playback.")
+                    newsong = True
+                else:
+                    print("[INFO] Song is NOT age restricted. Continuing playback.", end="\n\n")
+
+        # If the suggestion cannot be played, or is flagged for another reason, choose a new song
+        if newsong:
+            # Randomly choose a new song from the playlist
+            if len(listPlayedSongs) >= len(musicplaylist) - 1: # If the music list has been exhausted
+                listPlayedSongs.clear() # Clear the list and start again
+            while potentialsong in listPlayedSongs: # If the song has been chosen already,
+                potentialsong = random.randint(1,len(musicplaylist)-1) # Randomly select a new song from the playlist
+            listPlayedSongs.append(potentialsong) # Add the song index to the list of played songs
+            songselectionint = potentialsong # Set the next song to the one that was randomly chosen
+            videoID = str(musicplaylist[songselectionint])
+            newsong = False
 
         # Reset songsuggestion var
         songsuggestion = False
 
         # If the file has not been downloaded, do the following
-        if not os.path.exists(str(str(maindirectory) + "/DownloadedSongs/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=","")):
+        if not os.path.exists(str(str(maindirectory) + "/DownloadedSongs/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=","")) and not offlinemode:
             # Download the next song as a OGG file with YouTube-DL
             ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "format": "bestaudio[ext=m4a]", "geobypass": True, "source_address": "0.0.0.0", "noplaylist": True, "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 # ydl.download(videoID)
                 info = ydl.extract_info(videoID, download=True)
             # Normalize the audio
-            print("[INFO] Normalizing audio ...", end="\n\n")
-            beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedSongs/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
-            aftersound = effects.normalize(beforesound)  
-            aftersound.export(str(str(maindirectory) + "/DownloadedSongs/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg")
-            del beforesound
-            del aftersound
-            gc.collect() # Free memory
+            if normalize_bool:
+                print("[INFO] Normalizing audio ...", end="\n\n")
+                beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedSongs/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
+                aftersound = effects.normalize(beforesound)  
+                aftersound.export(str(str(maindirectory) + "/DownloadedSongs/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg", tags={"title": "AutomatedRadioStation"})
+                beforesound.close()
+                aftersound.close()
+                del beforesound
+                del aftersound
+                gc.collect() # Free memory
 
         # Play the downloaded song with pygame mixer
         try:
@@ -653,8 +694,8 @@ while True:
             waittime = (music.get_length()*1000) - 5000
             if waittime < 0:
                 waittime = music.get_length()*1000
-            if waittime > 600000: # If song is greater than 10 minutes
-                waittime = 600000 # Set length to maximum of 10 minutes
+            if waittime > maxsonglength*60000: # If song is greater than specified max length in ms
+                waittime = maxsonglength*60000 # Set song length to specified max length in ms
                 longspeechstring += "That's enough of that song. "
             # pygame.time.wait(waittime)
             # Show operator that song is playing in stdout
@@ -665,7 +706,7 @@ while True:
             music.fadeout(5000)
             # Song that just played
             longspeechstring += str(speechSongEndTransitions[random.randint(0,len(speechSongEndTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
-        except (RuntimeError, TypeError, NameError, OSError, KeyError, IndexError, LookupError):
+        except (RuntimeError, TypeError, NameError, OSError, KeyError, IndexError, LookupError, FileNotFoundError):
             speaktext("It looks like that song isn't available.")
             pass
 
@@ -697,16 +738,10 @@ while True:
 
         # Chance to talk about the weather [copied from online tutorial]
         # Only talks about weather if the welcome message didn't just play
-        if random.randint(0,weatherchance) == 1 and weatherkey != "" and welcomechance != defaultwelcomechance-1:
+        if random.randint(0,weatherchance) == 1 and weatherkey != "" and welcomechance != defaultwelcomechance-1 and not offlinemode:
             # Reset weatherchance var
             weatherchance = defaultweatherchance
-
-            # Talk about weather using Openweathermap API
-
-            # My API key
             api_key = weatherkey
-
-            # base_url variable to store the Openweathermap URL 
             base_url = "http://api.openweathermap.org/data/2.5/weather?"
 
             # Set city name [REFERENCED IN MAIN.PY OPTIONS]
@@ -715,44 +750,15 @@ while True:
                 city_name = "Auburn Hills"
                 print("[INFO] " + "A city name has not been set. Using Auburn Hills.", end="\n\n")
 
-            # complete_url variable to store 
-            # complete url address 
             complete_url = base_url + "appid=" + api_key + "&q=" + city_name 
-
-            # get method of requests module 
-            # return response object 
             response = requests.get(complete_url) 
 
-            # json method of response object 
-            # convert json format data into 
-            # python format data 
             x = response.json() 
-
-            # Now x contains list of nested dictionaries 
-            # Check the value of "cod" key is equal to 
-            # "404", means city is found otherwise, 
-            # city is not found 
             if x["cod"] != "404": 
-
-                # store the value of "main" 
-                # key in variable y 
                 y = x["main"] 
-
-                # store the value corresponding 
-                # to the "temp" key of y 
                 current_temperature = (y["temp"])*1.8 - 459.67
-
-                # store the value corresponding 
-                # to the "humidity" key of y 
                 current_humidity = y["humidity"] 
-
-                # store the value of "weather" 
-                # key in variable z 
                 z = x["weather"] 
-
-                # store the value corresponding 
-                # to the "description" key at 
-                # the 0th index of z 
                 weather_description = z[0]["description"] 
 
                 # Include weather info in longspeechstring var
@@ -815,7 +821,7 @@ while True:
 
         # Play random radio sound before speaking if file exists
         if radiosoundcount >= 1:
-            sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(radiosound_dict[random.randint(0,radiosoundcount)]))
+            sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(radiosound_dict[random.randint(0,radiosoundcount-1)]))
             sound.set_volume(0.3)
             mixer.Channel(6).play(sound, fade_ms=0)
             waittime = (sound.get_length()*1000)/2
@@ -826,7 +832,7 @@ while True:
         
         # Play the background waiting sound while the announcer speaks
         if radiomusiccount > 0:
-            newwaitingsoundtwo = mixer.Sound(str(maindirectory) + "/DownloadedSongs/" + str(radiomusic_dict[random.randint(0,radiomusiccount)]))
+            newwaitingsoundtwo = mixer.Sound(str(maindirectory) + "/DownloadedSongs/" + str(radiomusic_dict[random.randint(0,radiomusiccount-1)]))
             newwaitingsoundtwo.set_volume(0.1)
             mixer.Channel(7).play(newwaitingsoundtwo, fade_ms=1000)
 
@@ -877,20 +883,23 @@ while True:
             while True:
                 try:
                     playlistitem = str(psaplaylist[random.randint(1,len(psaplaylist)-1)])
-                    if not os.path.exists(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=","")):
+                    if not os.path.exists(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=","")) and not offlinemode:
                         # Download the next song as a OGG file with YouTube-DL
                         ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedPSAs/%(id)s.%(ext)s", "ignoreerrors": True, "format": "bestaudio[ext=m4a]", "geobypass": True, "source_address": "0.0.0.0", "noplaylist": True, "download_archive": str(maindirectory) + "/PSAArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
                         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                             # ydl.download(videoID)
                             info = ydl.extract_info(playlistitem, download=True)
                         # Normalize the audio
-                        print("[INFO] Normalizing audio ...", end="\n\n")
-                        beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
-                        aftersound = effects.normalize(beforesound)  
-                        aftersound.export(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg")
-                        del beforesound
-                        del aftersound
-                        gc.collect() # Free memory
+                        if normalize_bool:
+                            print("[INFO] Normalizing audio ...", end="\n\n")
+                            beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
+                            aftersound = effects.normalize(beforesound)  
+                            aftersound.export(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg", tags={"title": "AutomatedRadioStation"})
+                            beforesound.close()
+                            aftersound.close()
+                            del beforesound
+                            del aftersound
+                            gc.collect() # Free memory
 
                     # Play the downloaded song with pygame mixer
                     psa = mixer.Sound(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""))
@@ -904,7 +913,7 @@ while True:
 
                     pass
                     break # Break out of statement
-                except (RuntimeError, TypeError, NameError, OSError):
+                except (RuntimeError, TypeError, NameError, OSError, FileNotFoundError):
                     pass # Repeat
         
         # Increase chance to play PSA next time
@@ -913,16 +922,15 @@ while True:
 
         # Play random radio sound after speaking if file exists
         if radiosoundcount >= 1:
-            sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(radiosound_dict[random.randint(0,radiosoundcount)]))
+            sound = mixer.Sound(str(maindirectory) + "/Assets/SoundEffects/" + str(radiosound_dict[random.randint(0,radiosoundcount-1)]))
             sound.set_volume(0.3)
             mixer.Channel(8).play(sound, fade_ms=0)
             waittime = (sound.get_length()*1000)/2
             if waittime < 0:
                 waittime = sound.get_length()*1000
-            # pygame.time.wait(waittime)
             time.sleep(waittime/1000)
     except (RuntimeError, TypeError, NameError, OSError, KeyError, IndexError, LookupError):
         # Say that something has gone wrong
-        speaktext("It looks like something has gone wrong. Please wait while I restart the station.")
+        speaktext("Something has gone wrong. Please wait while I restart the station.")
         os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
         # os.execv(sys.executable, ['python3'] + sys.argv + ["skipintro"]) # Restart the script by issuing a terminal command, skipping the intro
