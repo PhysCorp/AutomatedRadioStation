@@ -20,11 +20,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-VERSION_INFO = "21.3.12" # Script version number [YEAR.MONTH.BUILDNUM]
+VERSION_INFO = "21.3.13" # Script version number [YEAR.MONTH.BUILDNUM]
 
 """
-CURRENT KNOWN ISSUES:
+CURRENT KNOWN ISSUE(S):
 - Audio normalizing causes a memory leak
+- Song suggestions don't have a title
+"""
+
+"""
+UPCOMING FEATURE(S):
++ Console-based dashboard instead of huge log
++ First-Run detection with announcer telling you how to setup this software
++ Better-looking HTML with multiple pages and graphs
 """
 
 # Try to import all modules
@@ -49,7 +57,6 @@ try:
     import json # Parse JSON files for API and playlist info
     import subprocess # Run multiple processes in parallel
     import gc # Memory management for audio processing
-    import math # Used in console dashboard
     from dashing import * # Console dashboard. Provides pretty text output to stdout.
     # from textgenrnn import textgenrnn # AI-based text generation
     from google.cloud import texttospeech # [PAID] Google Cloud Text to Speech
@@ -57,7 +64,7 @@ try:
     # Custom Modules
     from PlaylistSearch import Playlist # Set URL, weekday text, etc. Plus, download playlists
     from WeatherResponses import WeatherSpeech # Return specific sentence based on weather conditions
-    # from ConsoleUI import Dashboard # Custom dashboard for stdout
+    from ConsoleUI import Dashboard # Custom dashboard for stdout
 except ImportError:
     print("[WARN] You are missing one or more libraries. This script cannot continue.")
     print("Try running in terminal >> python3 -m pip install -r requirements.txt")
@@ -65,7 +72,7 @@ except ImportError:
 
 # Setup AI text generation
 # textgen = textgenrnn()
-# print("[INFO] Test phrase: " + str(textgen.generate()), end="\n\n") # Debug, print random AI-generated sentence to stdout
+# drawUI("[INFO] Test phrase: " + str(textgen.generate())) # Debug, print random AI-generated sentence to stdout
 
 # Init TTS engine
 engine = pyttsx3.init()
@@ -130,19 +137,26 @@ weekdaychance = defaultweekdaychance # Likelihood of mentioning the weekday agai
 timechance = defaulttimechance # Likelihood of mentioning the time [1/[x] chance]
 savedtime = "" # The text version of the time. Used to compare to actual time and determine when to start the next playlist
 
+# Init console dashboard
+masterdashboard = Dashboard("Automated Radio Station")
+
+# Custom function to draw to the dashboard's log
+def drawUI(text):
+    masterdashboard.UpdateUI(str(text), round((1/psachance)*100), round((1/weatherchance)*100), round((1/welcomechance)*100), round((1/weekdaychance)*100), round((1/timechance)*100))
+
 # If online, init web server
 if not offlinemode:
     # Init WebServer through subprocess, if port is selected in Options.json
     if isinstance(webport, int):
         subprocess.Popen(["python3", str(maindirectory) + "/WebServer.py", str(webport)])
     else:
-        print("[INFO] A port for WebServer has not been set. WebServer is disabled.", end="\n\n")
+        drawUI("[INFO] A port for WebServer has not been set. WebServer is disabled.")
 
 # Override radio intro if specified by script args
 if len(sys.argv) > 1:
     if "skipintro" in sys.argv:
         playintro = False
-        print("[INFO] Script arguments specified playintro to False! Skipping radio intro sequence.", end="\n\n")
+        drawUI("[INFO] Script arguments specified playintro to False! Skipping radio intro sequence.")
 
 # Retrieve API keys from JSON file
 try:
@@ -150,7 +164,7 @@ try:
         APIkeys_dict = json.load(json_file)
     weatherkey = str(APIkeys_dict["Openweathermap"]) # API key for Openweathermap
 except FileNotFoundError:
-    print("[WARN] \"APIKeys.json\" could not be found. Continuing without API keys ...", end="\n\n")
+    drawUI("[WARN] \"APIKeys.json\" could not be found. Continuing without API keys ...")
     pass
 
 # Return list of sound filenames, only with extensions .ogg and .wav
@@ -180,9 +194,9 @@ def variable_dump():
     data = {}
     data["Statistics"] = []
     if not songsuggestion:
-        data["Statistics"].append({"PlaylistURL": str(playlisturl), "SongsPlayedNum": len(listPlayedSongs),"SongTitle": str(playlistnames[songselectionint]),"EmbedLink": videoID.replace("https://www.youtube.com/watch?v=","https://www.youtube.com/embed/"),"SongLink": videoID, "WeatherDecimal": (1/weatherchance)*100, "PSADecimal": (1/psachance)*100, "WelcomeDecimal": (1/welcomechance)*100, "WeekdayDecimal": (1/weekdaychance)*100, "TimeDecimal": (1/timechance)*100})
+        data["Statistics"].append({"PlaylistURL": str(playlisturl), "SongsPlayedNum": len(listPlayedSongs),"SongTitle": str(playlistnames[songselectionint]),"EmbedLink": videoID.replace("https://www.youtube.com/watch?v=","https://www.youtube.com/embed/"),"SongLink": videoID, "WeatherDecimal": round((1/weatherchance)*100), "PSADecimal": round((1/psachance)*100), "WelcomeDecimal": round((1/welcomechance)*100), "WeekdayDecimal": round((1/weekdaychance)*100), "TimeDecimal": round((1/timechance)*100)})
     else:
-        data["Statistics"].append({"PlaylistURL": str(playlisturl), "SongsPlayedNum": len(listPlayedSongs),"SongTitle": "Audience Suggestion","EmbedLink": videoID.replace("https://www.youtube.com/watch?v=","https://www.youtube.com/embed/").replace("https://youtu.be/","https://www.youtube.com/embed/"),"SongLink": videoID, "WeatherDecimal": (1/weatherchance)*100, "PSADecimal": (1/psachance)*100, "WelcomeDecimal": (1/welcomechance)*100, "WeekdayDecimal": (1/weekdaychance)*100, "TimeDecimal": (1/timechance)*100})
+        data["Statistics"].append({"PlaylistURL": str(playlisturl), "SongsPlayedNum": len(listPlayedSongs),"SongTitle": "Audience Suggestion","EmbedLink": videoID.replace("https://www.youtube.com/watch?v=","https://www.youtube.com/embed/").replace("https://youtu.be/","https://www.youtube.com/embed/"),"SongLink": videoID, "WeatherDecimal": round((1/weatherchance)*100), "PSADecimal": round((1/psachance)*100), "WelcomeDecimal": round((1/welcomechance)*100), "WeekdayDecimal": round((1/weekdaychance)*100), "TimeDecimal": round((1/timechance)*100)})
     with open(str(maindirectory) + "/VariableDump.json", "w") as jsonfile:
         json.dump(data, jsonfile)
 
@@ -195,10 +209,10 @@ def parse_suggestions():
             json_file.close()
         os.remove(str(maindirectory) + "/SuggestionDump.json")
         newsuggestion = str(suggestion_dict["Link"])
-        print(f"[INFO] New suggestion found! {newsuggestion}", end="\n\n")
+        drawUI(f"[INFO] New suggestion found! {newsuggestion}")
         return newsuggestion
     except FileNotFoundError:
-        print("[INFO] No new suggestions yet.", end="\n\n")
+        drawUI("[INFO] No new suggestions yet.")
         return ""
 
 # Google Cloud TTS Function to Generate Wavenet Samples
@@ -245,7 +259,7 @@ def text_to_wav(text, earlyfade = False):
 
 # Custom function to just speak text with system TTS
 def speaktext(message, earlyfade=False):
-    print("[SPEECH] " + "\"" + str(message) + "\"", end="\n\n") # Print the message contents to stdout
+    drawUI("[SPEECH] " + "\"" + str(message) + "\"") # Print the message contents to stdout
     # If enabled, write message contents to text file for use in OBS Studio
     if writeoutput:
         with open(str(maindirectory) + "/Output.txt","w") as fileoutput:
@@ -277,7 +291,7 @@ if radiomusiccount > 0:
 
 # State any errors/warnings to user
 if weatherkey == "":
-    print("[WARN] " + "You have not provided an Openweathermap API key. The API key is required to give weather info.", end="\n\n")
+    drawUI("[WARN] " + "You have not provided an Openweathermap API key. The API key is required to give weather info.")
 
 # Custom function to remove unneccessary chars from YouTube video ID after "&"
 def vidstrip(playlist):
@@ -292,7 +306,7 @@ url = ""
 # Display time to stdout to let user verify if correct playlist is chosen.
 timeobject = datetime.now()
 currenttime = timeobject.strftime("%I:%M")
-print("[INFO] " + "The time is currently " + str(currenttime) + ".", end="\n\n")
+drawUI("[INFO] " + "The time is currently " + str(currenttime) + ".")
 
 # Set the following VARs according to the current time, for use in the IF statements below
 timeobject = datetime.now()
@@ -309,15 +323,15 @@ weekdaytext = playlistselection.get_weekdaytext()
 # If the playlist URL is still blank, warn the user and use a fallback playlist
 if url == "":
     url = "https://www.youtube.com/playlist?list=PLHL1i3oc4p0o76QOZ_BLZwjDb1x21azmC"
-    print("[WARN] " + "You didn't specify a music playlist for today's date! Using fallback playlist.", end="\n\n")
+    drawUI("[WARN] " + "You didn't specify a music playlist for today's date! Using fallback playlist.")
 
 # If specified, override the weekday playlist with something else
 if overrideplaylist:
     url = overrideplaylist
-    print("[INFO] " + "Override enabled for playlist. Using " + str(url) + ".", end="\n\n")
+    drawUI("[INFO] " + "Override enabled for playlist. Using " + str(url) + ".")
 
 # Print steps to stdout
-print("[INFO] " + "Scraping music playlist ...", end="\n\n")
+drawUI("[INFO] " + "Scraping music playlist ...")
 
 # Set Firefox to run in headless mode
 opts = FirefoxOptions()
@@ -340,7 +354,7 @@ while scrollcounter < scrollinglimit:
     scrolldriver.send_keys(Keys.END)
     time.sleep(2)
     scrollcounter += 1
-    print(f"[INFO] (Index {scrollcounter}) Scrolling to next page in playlist.", end="\n\n")
+    drawUI(f"[INFO] (Index {scrollcounter}) Scrolling to next page in playlist.")
 
 videos=driver.find_elements_by_class_name('style-scope ytd-playlist-video-renderer')
 
@@ -360,7 +374,7 @@ for video in videos:
     else:
         name = longname_concat[:end]
     if name != "": # If title exists, add name and link to the lists
-        print(f"[INFO] (Video Index {str(countervar)}) Retrieved info for \"{name}\"", end="\n\n")
+        drawUI(f"[INFO] (Video Index {str(countervar)}) Retrieved info for \"{name}\"")
         playlist.append(link)
         playlistnames.append(name)
         countervar += 1
@@ -369,7 +383,7 @@ musicplaylist=vidstrip(playlist) # Strip unneccessary chars from list
 driver.close() # Close the web rendering engine
 
 # Print message to stdout
-print("[INFO] " + "Finished downloading info from music playlist.", end="\n\n")
+drawUI("[INFO] " + "Finished downloading info from music playlist.")
 
 # Open SongArchive file to avoid excessive YouTube-DL calls
 try:
@@ -382,7 +396,7 @@ except FileNotFoundError:
 
 # If predownload is enabled, download entire music library ahead of time
 if predownload and not offlinemode:
-    print("[INFO] " + "Saving music playlist to disk ...", end="\n\n")
+    drawUI("[INFO] " + "Saving music playlist to disk ...")
     speaktext("Please enjoy this song while I finish preparing a playlist for you. This will take a while.")
     ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs/%(id)s.%(ext)s", "ignoreerrors": True, "format": "bestaudio[ext=m4a]", "geobypass": True, "noplaylist": True, "source_address": "0.0.0.0", "download_archive": str(maindirectory) + "/SongArchive.txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
@@ -404,9 +418,9 @@ if predownload and not offlinemode:
                         del beforesound
                         del aftersound
                         gc.collect() # Free memory
-                    print(f"[INFO] Downloaded ({videocounter + 1}/{len(musicplaylist)}) Normalizing audio ...", end="\n\n")
+                    drawUI(f"[INFO] Downloaded ({videocounter + 1}/{len(musicplaylist)}) Normalizing audio ...")
                 except FileNotFoundError:
-                    print(f"[INFO] Failed to download ({videocounter + 1}/{len(musicplaylist)}).", end="\n\n")
+                    drawUI(f"[INFO] Failed to download ({videocounter + 1}/{len(musicplaylist)}).")
                     pass
             videocounter += 1
 
@@ -416,7 +430,7 @@ if psaplaylisturl != "":
     url = psaplaylisturl
 
     # Print steps to stdout
-    print("[INFO] " + "Scraping PSA playlist ...", end="\n\n")
+    drawUI("[INFO] " + "Scraping PSA playlist ...")
 
     # Run Firefox in automated headless mode
     opts = FirefoxOptions()
@@ -434,7 +448,7 @@ if psaplaylisturl != "":
         scrolldriver.send_keys(Keys.END)
         time.sleep(2)
         scrollcounter += 1
-        print(f"[INFO] (Index {scrollcounter}) Scrolling to next page in playlist.", end="\n\n")
+        drawUI(f"[INFO] (Index {scrollcounter}) Scrolling to next page in playlist.")
 
     videos=driver.find_elements_by_class_name('style-scope ytd-playlist-video-renderer')
     for video in videos:
@@ -454,17 +468,17 @@ if psaplaylisturl != "":
         if name != "": # If title exists, add name and link to the lists
             playlist.append(link2) # Append each URL to the list
             playlistnamesPSA.append(longname2)
-            print(f"[INFO] (Video Index {str(countervar)}) Retrieved info for \"{longname2}\"", end="\n\n")
+            drawUI(f"[INFO] (Video Index {str(countervar)}) Retrieved info for \"{longname2}\"")
             countervar += 1
 
     psaplaylist=vidstrip(playlist)
     driver.close() # Close the web rendering engine
 else:
     # Print missing playlist info message to stdout
-    print("[INFO] " + "PSA playlist URL has not been set. The station will not play PSAs.", end="\n\n")
+    drawUI("[INFO] " + "PSA playlist URL has not been set. The station will not play PSAs.")
 
 # Print completion message to stdout
-print("[INFO] " + "Finished downloading info from PSA playlist. Starting radio ...", end="\n\n")
+drawUI("[INFO] " + "Finished downloading info from PSA playlist. Starting radio ...")
 
 # Read and store each external speech script into memory
 # (Each line in the textfile represents a different index in the list)
@@ -476,7 +490,7 @@ try:
     speechIntroTextShort = fileIntroTextShort.readlines()
     fileIntroTextShort.close()
 except FileNotFoundError:
-    print("[WARN] \"IntroTextShort.txt\" cannot be found. Try redownloading the program? Continuing anyway ...", end="\n\n")
+    drawUI("[WARN] \"IntroTextShort.txt\" cannot be found. Try redownloading the program? Continuing anyway ...")
     speechIntroTextShort = "You are listening to PhysCorp's Automated Radio Station."
     pass
 
@@ -486,7 +500,7 @@ try:
     speechFirstrunPrompts = fileFirstrunPrompts.readlines()
     fileFirstrunPrompts.close()
 except FileNotFoundError:
-    print("[WARN] \"FirstrunPrompts.txt\" cannot be found. Try redownloading the program? Continuing anyway ...", end="\n\n")
+    drawUI("[WARN] \"FirstrunPrompts.txt\" cannot be found. Try redownloading the program? Continuing anyway ...")
     speechFirstrunPrompts = "Welcome to the fully automated radio station."
     pass
 
@@ -496,7 +510,7 @@ try:
     speechSongTransitions = fileSongTransitions.readlines()
     fileSongTransitions.close()
 except FileNotFoundError:
-    print("[WARN] \"SongTransitions.txt\" cannot be found. Try redownloading the program? Continuing anyway ...", end="\n\n")
+    drawUI("[WARN] \"SongTransitions.txt\" cannot be found. Try redownloading the program? Continuing anyway ...")
     speechFirstrunPrompts = "Up next is "
     pass
 
@@ -506,7 +520,7 @@ try:
     speechSongEndTransitions = fileSongEndTransitions.readlines()
     fileSongEndTransitions.close()
 except FileNotFoundError:
-    print("[WARN] \"SongEndTransitions.txt\" cannot be found. Try redownloading the program? Continuing anyway ...", end="\n\n")
+    drawUI("[WARN] \"SongEndTransitions.txt\" cannot be found. Try redownloading the program? Continuing anyway ...")
     speechFirstrunPrompts = "You just heard "
     pass
 
@@ -530,7 +544,7 @@ if radiomusiccount > 0:
 
 # Wait for the user to press ENTER if they specified waiting in Options.json
 if waitforuser:
-    print("[INFO] The radio is ready! Press ENTER to start.")
+    drawUI("[INFO] The radio is ready! Press ENTER to start.")
     testinput = input("")
 
 # Loop through songs, announcements, and other commentary forever
@@ -584,8 +598,8 @@ while True:
                 potentialsong = random.randint(1,len(musicplaylist)-1) # Randomly select a new song from the playlist
             listPlayedSongs.append(potentialsong) # Add the song index to the list of played songs
             songselectionint = potentialsong # Set the next song to the one that was randomly chosen
-            print("[INFO] " + "List of completed song indexes:\n\t" + str(listPlayedSongs), end="\n\n") # Show list of played song numbers
-            print("[INFO] " + "Likelihood VARs:\n\tPSA: [1/" + str(psachance) + "]\tWeather: [1/" + str(weatherchance) + "]\tWelcomeMessage: [1/" + str(welcomechance) + "]\tWeekdayMessage: [1/" + str(weekdaychance) + "]\tTime: [1/" + str(timechance) + "]", end="\n\n") # Show chance VARs
+            drawUI("[INFO] " + "List of completed song indexes:\n\t" + str(listPlayedSongs)) # Show list of played song numbers
+            drawUI("[INFO] " + "Likelihood VARs:\n\tPSA: [1/" + str(psachance) + "]\tWeather: [1/" + str(weatherchance) + "]\tWelcomeMessage: [1/" + str(welcomechance) + "]\tWeekdayMessage: [1/" + str(weekdaychance) + "]\tTime: [1/" + str(timechance) + "]") # Show chance VARs
 
             longspeechstring = "" # Clear the longspeechstring var
             longspeechstring += " " + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
@@ -630,7 +644,7 @@ while True:
             videoID = potentialsuggestion
             if videoID.find("youtube.com/watch?v=") == -1 and videoID.find("youtu.be/") == -1:
                 # Link is NOT valid
-                print("[INFO] The suggested song is not a valid YouTube link.", end="\n\n")
+                drawUI("[INFO] The suggested song is not a valid YouTube link.")
                 speaktext("Never mind. It looks like the suggested link is not valid. I'm resuming normal playback.")
                 newsong = True
             else:
@@ -646,11 +660,11 @@ while True:
                 
                 # If the video has an age limit, skip it and find a new song
                 if suggestioninfo["age_limit"] > 0:
-                    print("[INFO] The suggested song has an age limit.", end="\n\n")
+                    drawUI("[INFO] The suggested song has an age limit.")
                     speaktext("Never mind. It looks like the suggested song has an age limit and is not suitable for the radio. I'm resuming normal playback.")
                     newsong = True
                 else:
-                    print("[INFO] Song is NOT age restricted. Continuing playback.", end="\n\n")
+                    drawUI("[INFO] Song is NOT age restricted. Continuing playback.")
 
         # If the suggestion cannot be played, or is flagged for another reason, choose a new song
         if newsong:
@@ -676,7 +690,7 @@ while True:
                 info = ydl.extract_info(videoID, download=True)
             # Normalize the audio
             if normalize_bool:
-                print("[INFO] Normalizing audio ...", end="\n\n")
+                drawUI("[INFO] Normalizing audio ...")
                 beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedSongs/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
                 aftersound = effects.normalize(beforesound)  
                 aftersound.export(str(str(maindirectory) + "/DownloadedSongs/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg", tags={"title": "AutomatedRadioStation"})
@@ -699,8 +713,8 @@ while True:
                 longspeechstring += "That's enough of that song. "
             # pygame.time.wait(waittime)
             # Show operator that song is playing in stdout
-            print("[INFO] " + "Currently playing " + str(playlistnames[songselectionint]) + ".", end="\n\n")
-            print("[DEBUG - SONG PATH] " + str(str(maindirectory) + "/DownloadedSongs/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""), end="\n\n")
+            drawUI("[INFO] " + "Currently playing " + str(playlistnames[songselectionint]) + ".")
+            drawUI("[DEBUG - SONG PATH] " + str(str(maindirectory) + "/DownloadedSongs/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""))
             variable_dump() # Dump variables to JSON file for use in WebServer
             time.sleep(waittime/1000)
             music.fadeout(5000)
@@ -748,7 +762,7 @@ while True:
             # If blank, set city to Auburn Hills and print info to stdout
             if city_name == "":
                 city_name = "Auburn Hills"
-                print("[INFO] " + "A city name has not been set. Using Auburn Hills.", end="\n\n")
+                drawUI("[INFO] " + "A city name has not been set. Using Auburn Hills.")
 
             complete_url = base_url + "appid=" + api_key + "&q=" + city_name 
             response = requests.get(complete_url) 
@@ -787,8 +801,8 @@ while True:
                 potentialsong = random.randint(1,len(musicplaylist)-1) # Randomly select a new song from the playlist
             listPlayedSongs.append(potentialsong) # Add the song index to the list of played songs
             songselectionint = potentialsong # Set the next song to the one that was randomly chosen
-            print("[INFO] " + "List of completed song indexes:\n\t" + str(listPlayedSongs), end="\n\n") # Show list of played song numbers
-            print("[INFO] " + "Likelihood VARs:\n\tPSA: [1/" + str(psachance) + "]\tWeather: [1/" + str(weatherchance) + "]\tWelcomeMessage: [1/" + str(welcomechance) + "]\tWeekdayMessage: [1/" + str(weekdaychance) + "]\tTime: [1/" + str(timechance) + "]", end="\n\n") # Show chance VARs
+            drawUI("[INFO] " + "List of completed song indexes:\n\t" + str(listPlayedSongs)) # Show list of played song numbers
+            drawUI("[INFO] " + "Likelihood VARs:\n\tPSA: [1/" + str(psachance) + "]\tWeather: [1/" + str(weatherchance) + "]\tWelcomeMessage: [1/" + str(welcomechance) + "]\tWeekdayMessage: [1/" + str(weekdaychance) + "]\tTime: [1/" + str(timechance) + "]") # Show chance VARs
 
         # If the playlist isn't overridden, chance to add the weekday text to longspeechstring var
         if not overrideplaylist:
@@ -891,7 +905,7 @@ while True:
                             info = ydl.extract_info(playlistitem, download=True)
                         # Normalize the audio
                         if normalize_bool:
-                            print("[INFO] Normalizing audio ...", end="\n\n")
+                            drawUI("[INFO] Normalizing audio ...")
                             beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
                             aftersound = effects.normalize(beforesound)  
                             aftersound.export(str(str(maindirectory) + "/DownloadedPSAs/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg", tags={"title": "AutomatedRadioStation"})
@@ -908,7 +922,7 @@ while True:
                     waittime = psa.get_length()*1000
                     # pygame.time.wait(waittime)
                     # Show operator that song is playing in stdout
-                    print("[INFO] " + "Currently playing PSA.", end="\n\n")
+                    drawUI("[INFO] " + "Currently playing PSA.")
                     time.sleep(waittime/1000)
 
                     pass
