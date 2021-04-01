@@ -3,6 +3,7 @@
   "suggestions": true,
   "normalize_audio": false,
   "port": 4024,
+  "dashboard": true,
   "offline_mode": false,
   "max_song_length": 10,
   "wavenet": false,
