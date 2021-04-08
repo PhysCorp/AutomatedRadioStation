@@ -14,27 +14,27 @@
 
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
 	<div class="container-fluid">
-		<a class="navbar-brand" href="#"><img src="Icon.png" alt="" width="32" height="32"></a>
+		<a class="navbar-brand" href="#"><img src="/Icon.png" alt="" width="32" height="32"></a>
 		<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
 		<span class="navbar-toggler-icon"></span>
 		</button>
 		<div class="collapse navbar-collapse" id="navbarNavAltMarkup">
 		<div class="navbar-nav">
-			<a class="nav-link active" aria-current="page" href="#">Home</a>
-			<a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Song Info</a>
+			<a class="nav-link active" aria-current="page" href="#">Station Info</a>
+			<a class="nav-link" href="http://listen.physcorp.com">Listen Live</a>
 			<a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Schedule</a>
-			<a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Listen</a>
 			<a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Configuration</a>
-			<a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">About</a>
+			<a class="nav-link" href="http://www.physcorp.com/radio">About</a>
 		</div>
 		</div>
 	</div>
 	</nav>
 
-<figure class="text-center">
-<h1><span class="badge bg-secondary">Automated Radio Station Info</span></h1>
-<iframe width="560" height="315" src={{EmbedLink}} frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-</figure>
+<div class="container">
+	<div class="row">
+	  <div class="col-sm">
+		<h1><span class="badge bg-secondary">Automated Radio Station Info</span></h1>
+		<iframe width="560" height="315" src={{EmbedLink}} frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 <form action="/" method="POST">
 	<div class="mb-3">
@@ -44,26 +44,20 @@
 	</div>
 
 	<button type="submit" class="btn btn-primary">Suggest Video</button>
+	<img src="/frame.png" alt="QR Code">
   </form>
-
-<h1><span class="badge bg-secondary">Song/Playlist Info</span></h1>
+	  </div>
+	  <div class="col-sm">
+		<h1><span class="badge bg-secondary">Song/Playlist Info</span></h1>
 
 <table class="table">
 	<thead>
 	  <tr>
 		<th scope="col">Song Info</th>
-		<th scope="col">Value</th>
+		<th scope="col"></th>
 	  </tr>
 	</thead>
 	<tbody>
-	  <tr>
-		<th scope="row">Current Playlist</th>
-		<td><a href={{PlaylistURL}}>{{PlaylistURL}}</a></td>
-	  </tr>
-	  <tr>
-		<th scope="row">Number of songs played so far</th>
-		<td>{{SongsPlayedNum}}</td>
-	  </tr>
 	  <tr>
 		<th scope="row">Song Title</th>
 		<td>{{SongTitle}}</td>
@@ -75,46 +69,61 @@
 	</tbody>
   </table>
 
-<h1><span class="badge bg-secondary">Variable Info</span></h1>
-
 <table class="table">
 	<thead>
 	  <tr>
-		<th scope="col">#</th>
-		<th scope="col">Variable</th>
-		<th scope="col">Percentage</th>
+		<th scope="col">Playlist Info</th>
+		<th scope="col"></th>
 	  </tr>
 	</thead>
 	<tbody>
 	  <tr>
-		<th scope="row">1</th>
-		<td>Weather</td>
-		<td>{{WeatherDecimal}}</td>
+		<th scope="row">Number of songs played</th>
+		<td>{{SongsPlayedNum}}</td>
 	  </tr>
 	  <tr>
-		<th scope="row">2</th>
-		<td>PSA</td>
-		<td>{{PSADecimal}}</td>
-	  </tr>
-	  <tr>
-		<th scope="row">3</th>
-		<td>Welcome</td>
-		<td>{{WelcomeDecimal}}</td>
-	  </tr>
-	  <tr>
-		<th scope="row">4</th>
-		<td>Weekday</td>
-		<td>{{WeekdayDecimal}}</td>
-	  </tr>
-	  <tr>
-		<th scope="row">5</th>
-		<td>Time</td>
-		<td>{{TimeDecimal}}</td>
+		<th scope="row">Current Playlist</th>
+		<td><a href={{PlaylistURL}}>{{PlaylistURL}}</a></td>
 	  </tr>
 	</tbody>
   </table>
 
-<img src="frame.png" alt="QR Code">
+<h1><span class="badge bg-secondary">Chance to Mention Info</span></h1>
+
+<h3>Weather</h3>
+<div class="progress">
+	<div class="progress-bar" role="progressbar" style="width: {{WeatherDecimal}}%;" aria-valuenow={{WeatherDecimal}} aria-valuemin="0" aria-valuemax="100">{{WeatherDecimal}}%</div>
+  </div>
+
+<h3>PSA</h3>
+<div class="progress">
+	<div class="progress-bar" role="progressbar" style="width: {{PSADecimal}}%;" aria-valuenow={{PSADecimal}} aria-valuemin="0" aria-valuemax="100">{{PSADecimal}}%</div>
+  </div>
+
+<h3>Welcome</h3>
+<div class="progress">
+	<div class="progress-bar" role="progressbar" style="width: {{WelcomeDecimal}}%;" aria-valuenow={{WelcomeDecimal}} aria-valuemin="0" aria-valuemax="100">{{WelcomeDecimal}}%</div>
+  </div>
+
+<h3>Weekday</h3>
+<div class="progress">
+	<div class="progress-bar" role="progressbar" style="width: {{WeekdayDecimal}}%;" aria-valuenow={{WeekdayDecimal}} aria-valuemin="0" aria-valuemax="100">{{WeekdayDecimal}}%</div>
+  </div>
+
+<h3>Time</h3>
+<div class="progress">
+	<div class="progress-bar" role="progressbar" style="width: {{TimeDecimal}}%;" aria-valuenow={{TimeDecimal}} aria-valuemin="0" aria-valuemax="100">{{TimeDecimal}}%</div>
+  </div>
+	  </div>
+	</div>
+  </div>
+
+<h1><span class="badge bg-secondary">RadioHost Software Info</span></h1>
+<h3>What is it?</h3>
+<h51>[This is a fun project for me to better understand Python!] PhysCorp's Automated Radio Station is a new take on auto-DJ services. The station is run entirely by computers. Unlike traditional radio stations that use an auto-DJ, this station serves to include commentary between songs like a live announcer!</h5>
+
+<h3>How does it work?</h3>
+<h5>This software is built with Python in Visual Studio Code. The program scrapes a YouTube playlist according to the weekday, using a headless version of Firefox. The program then plays the videos in a random order, taking care to not repeat videos in headless VLC instance. Between songs, the announcer occasionally talks about the weather, the current playlist info, or a PSA. The program connects to several APIs to administer content, such as Openweathermap for weather info, YouTube Data for gathering video info, and Google Cloud Text to Speech for their Wavenet voices</h5>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js" integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0" crossorigin="anonymous"></script>
 

@@ -11,9 +11,10 @@ try:
         print("Try running in terminal >> python3 -m pip install -r requirements.txt")
         quit()
 
-    # Set port number according to script arguments
-    if len(sys.argv) > 1:
-        webport = int(sys.argv[-1])
+    # Set port number and name according to script arguments
+    if len(sys.argv) > 2:
+        webport = int(sys.argv[-2])
+        name = str(sys.argv[-1])
 
     # Determine main program directory
     maindirectory = os.path.dirname(os.path.abspath(__file__)) # The absolute path to this file
@@ -23,19 +24,19 @@ try:
         data = {}
         data["Suggestion"] = []
         data["Suggestion"].append({"Link": str(link)})
-        with open(str(maindirectory) + "/SuggestionDump.json", "w") as jsonfile:
+        with open(str(maindirectory) + "/SuggestionDump" + str(name) + ".json", "w") as jsonfile:
             json.dump(data, jsonfile)
 
     # Init Flask
     app = Flask(__name__)
 
-    print(f"[INFO] WebServer is now running. View station info and suggest songs here with port {webport}.", end="\n\n")
+    print(f"[INFO] WebServer is now running. View station info and suggest songs here with port {webport}.")
 
     @app.route("/")
     def index():
         # Open JSON file
         try:
-            with open(str(maindirectory) + "/VariableDump.json", "r") as json_file:
+            with open(str(maindirectory) + "/VariableDump" + str(name) + ".json", "r") as json_file:
                 statistics_dict_parent = json.load(json_file)
                 statistics_dict = statistics_dict_parent["Statistics"][0]
                 json_file.close()

@@ -6,19 +6,19 @@ class Dashboard():
 
     def UpdateUI(self, output, bar1, bar2, bar3, bar4, bar5):
         self.ui = VSplit(
-            Log(title="Terminal Output", color=2, border_color=2),
+            Log(title="Output Log", color=1, border_color=1),
 
             VSplit(
                 HSplit(
-                    VGauge(val=95, border_color=2, color=2),
-                    VGauge(val=95, border_color=2, color=2),
-                    VGauge(val=95, border_color=2, color=2),
-                    VGauge(val=95, border_color=2, color=2),
-                    VGauge(val=95, border_color=2, color=2),
+                    VGauge(title="PSA", val=95, border_color=1, color=1),
+                    VGauge(title="Weather", val=95, border_color=1, color=1),
+                    VGauge(title="Welcome", val=95, border_color=1, color=1),
+                    VGauge(title="Weekday", val=95, border_color=1, color=1),
+                    VGauge(title="Time", val=95, border_color=1, color=1),
                 )
             ),
             title=str(self.title),
-            color=2
+            color=1
         )
         
         self.log = self.ui.items[0]
