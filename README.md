@@ -24,13 +24,13 @@ Terminal >> sudo apt install firefox espeak python3-venv firefox-geckodriver ffm
 # Install Instructions:
 This should be used on a Debian-based Linux distro! I haven't tested other Linux distros, as well as Windows and Mac OS! Expect *many* errors.
 
-Prereq: Clone the repo. Terminal: "git clone https://github.com/PhysCorp/AutomatedRadioStation.git"
+Prereq: Clone the repo. Terminal >> git clone https://github.com/PhysCorp/AutomatedRadioStation.git
 
-1) Make sure Python 3.8.5+ and the additional packages are installed! Terminal: "sudo apt install python3 python3-pip firefox firefox-geckodriver python3-venv espeak mbrola mbrola-us2 mbrola-us3 ffmpeg"
-2) Change to project directory, then use PIP to install required files. Terminal: "cd AutomatedRadioStation && pip3 install -r requirements.txt"
-3) Configure any speech scripts/playlists (See "Configuration Tab Below").
+1) Make sure Python 3.8.5+ and the additional packages are installed! Run the above command listed under Requirements!
+2) Change to project directory, then use PIP to install required files. Terminal >> cd AutomatedRadioStation && python3 -m pip install -r requirements.txt
+3) Configure the program using the Assets and SpeechScripts folders, as well as Playlist Info and Options. Please see Configuration Tab below. Or, simply skip to step five as the program gives you a guided tutorial upon first launch!
 4) Add your API Keys from Openweathermap and Google Cloud Text to Speech to the respective files (APIKeys.json and GoogleAPIKey.json). Keys aren't required, but you will experience limited functionality.
-5) Run the program! Terminal: "bash StartRadio.sh"
+5) Run the program! Terminal >> bash StartRadio.sh
 
 # Configuration:
 [This section is included in the Guided Tutorial when the program first launches.]
