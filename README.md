@@ -15,7 +15,7 @@ PhysCorp's Automated Radio Station is a new take on auto-DJ services. The statio
 
 # How does it work?
 This software is built with Python in Visual Studio Code. The program scrapes a YouTube playlist according to the weekday and time using a headless version of Firefox through selenium. The program then plays the videos in a random order, taking care to not repeat any. Between songs, the announcer occasionally talks about the weather, time, the current playlist info, or a PSA. The program connects to several APIs to administer content, such as Openweathermap for weather info and Google Cloud Text to Speech for their high quality Wavenet voices.
-Additionally, users can view the current song and playlist info, as well as suggest a YouTube link to their favorite song, through the included web dashboard!
+Additionally, users can view the current song and playlist info, as well as suggest a YouTube link to their favorite song, through the included web dashboard! You can even run multiple instances of this software with different configurations simultaneously!
 
 # Requirements:
 This program requires that you have the following installed, as well as all the dependencies listed in requirements.txt:
