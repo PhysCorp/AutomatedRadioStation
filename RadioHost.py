@@ -1,4 +1,3 @@
-
 # Try to import all modules
 try:
     import random # Random number generation
@@ -1125,7 +1124,8 @@ class RadioHost:
                 # If mismatch, restart the station
                 if savedtimecomparison != savedtime and overrideplaylist == "":
                     speaktext("We're ready for a new playlist. Coming up in a sec!")
-                    waitingsound.music.stop()
+                    mixer.music.stop()
+                    mixer.music.unload()
                     os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
 
                 # Play the synthesized speech
