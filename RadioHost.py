@@ -386,10 +386,12 @@ class RadioHost:
 
         # Start a random radio "waiting" song
         if radiomusiccount > 0:
-            waitingsound = mixer.Sound(str(maindirectory) + "/DownloadedSongs" + str(customlocation) + "/" + str(radiomusic_dict[random.randint(0,radiomusiccount)]))
-            waitingsound.set_volume(0.4)
+            # waitingsound = mixer.Sound(str(maindirectory) + "/DownloadedSongs" + str(customlocation) + "/" + str(radiomusic_dict[random.randint(0,radiomusiccount)]))
+            waitingsound = mixer.music.load(str(maindirectory) + "/DownloadedSongs" + str(customlocation) + "/" + str(radiomusic_dict[random.randint(0,radiomusiccount)]))
+            mixer.music.set_volume(0.4)
             if not offlinemode: # If offline, no need to wait
-                mixer.Channel(1).play(waitingsound, fade_ms=1000, loops=999)
+                # mixer.Channel(1).play(waitingsound, fade_ms=1000, loops=999)
+                mixer.music.play(999, 0, 1000) # Loops, start, fade_ms
 
         # State any errors/warnings to user
         if weatherkey == "":
@@ -773,7 +775,8 @@ class RadioHost:
 
         # Stop the waiting sound, fading out for 1 second
         if radiomusiccount > 0:
-            waitingsound.fadeout(1000)
+            mixer.music.fadeout(1000)
+            mixer.music.unload()
 
         # Wait for the user to press ENTER if they specified waiting in Options.json
         if waitforuser:
@@ -801,16 +804,19 @@ class RadioHost:
                     
                     # Play the background waiting sound while the announcer speaks
                     if radiomusiccount > 0:
-                        newwaitingsound = mixer.Sound(str(maindirectory) + "/DownloadedSongs" + str(customlocation) + "/" + str(radiomusic_dict[random.randint(0,radiomusiccount)]))
-                        newwaitingsound.set_volume(0.1)
-                        mixer.Channel(3).play(newwaitingsound, fade_ms=1000)
+                        # newwaitingsound = mixer.Sound(str(maindirectory) + "/DownloadedSongs" + str(customlocation) + "/" + str(radiomusic_dict[random.randint(0,radiomusiccount)]))
+                        newwaitingsound = mixer.music.load(str(maindirectory) + "/DownloadedSongs" + str(customlocation) + "/" + str(radiomusic_dict[random.randint(0,radiomusiccount)]))
+                        mixer.music.set_volume(0.1)
+                        # mixer.Channel(3).play(newwaitingsound, fade_ms=1000)
+                        mixer.music.play(0, 0, 1000) # Loops, start, fade_ms
 
                     # Play the synthesized voice
                     speaktext(longspeechstring)
 
                     # Stop the waiting sound, fading out for 1 second
                     if radiomusiccount > 0:
-                        newwaitingsound.fadeout(1000)
+                        mixer.music.fadeout(1000)
+                        mixer.music.unload()
 
                     # Play random radio sound after speaking (if file exists)
                     if radiosoundcount >= 1:
@@ -935,22 +941,26 @@ class RadioHost:
 
                 # Play the downloaded song with pygame mixer
                 try:
-                    music = mixer.Sound(str(str(maindirectory) + "/DownloadedSongs" + str(customlocation) + "/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""))
-                    music.set_volume(0.7)
-                    mixer.Channel(4).play(music, fade_ms=5000)
-                    waittime = (music.get_length()*1000) - 5000
-                    if waittime < 0:
-                        waittime = music.get_length()*1000
-                    if waittime > maxsonglength*60000: # If song is greater than specified max length in ms
-                        waittime = maxsonglength*60000 # Set song length to specified max length in ms
-                        longspeechstring += "That's enough of that song. "
+                    # music = mixer.Sound(str(str(maindirectory) + "/DownloadedSongs" + str(customlocation) + "/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""))
+                    music = mixer.music.load(str(str(maindirectory) + "/DownloadedSongs" + str(customlocation) + "/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""))
+                    mixer.music.set_volume(0.7)
+                    # mixer.Channel(4).play(music, fade_ms=5000)
+                    mixer.music.play(0, 0, 5000) # Loops, start, fade_ms
                     # pygame.time.wait(waittime)
                     # Show operator that song is playing in stdout
                     drawUI("[INFO] " + "Currently playing " + str(playlistnames[songselectionint]) + ".")
                     drawUI("[DEBUG - SONG PATH] " + str(str(maindirectory) + "/DownloadedSongs" + str(customlocation) + "/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""))
                     variable_dump() # Dump variables to JSON file for use in WebServer
-                    time.sleep(waittime/1000)
-                    music.fadeout(4000)
+                    busycheck = True
+                    while (busycheck):
+                        time.sleep(1)
+                        if not mixer.music.get_busy():
+                            busycheck = False
+                        if (mixer.music.get_pos()/1000) > maxsonglength*60000:
+                            longspeechstring += "That's enough of that song. "
+                            busycheck = False
+                    mixer.music.fadeout(4000)
+                    mixer.music.unload()
                     # Song that just played
                     longspeechstring += str(speechSongEndTransitions[random.randint(0,len(speechSongEndTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
                 except (RuntimeError, TypeError, NameError, OSError, KeyError, IndexError, LookupError, FileNotFoundError):
@@ -1079,15 +1089,18 @@ class RadioHost:
                 
                 # Play the background waiting sound while the announcer speaks
                 if radiomusiccount > 0:
-                    newwaitingsoundtwo = mixer.Sound(str(maindirectory) + "/DownloadedSongs" + str(customlocation) + "/" + str(radiomusic_dict[random.randint(0,radiomusiccount)]))
-                    newwaitingsoundtwo.set_volume(0.1)
-                    mixer.Channel(5).play(newwaitingsoundtwo, fade_ms=1000)
+                    # newwaitingsoundtwo = mixer.Sound(str(maindirectory) + "/DownloadedSongs" + str(customlocation) + "/" + str(radiomusic_dict[random.randint(0,radiomusiccount)]))
+                    newwaitingsoundtwo = mixer.music.load(str(maindirectory) + "/DownloadedSongs" + str(customlocation) + "/" + str(radiomusic_dict[random.randint(0,radiomusiccount)]))
+                    mixer.music.set_volume(0.1)
+                    # mixer.Channel(5).play(newwaitingsoundtwo, fade_ms=1000)
+                    mixer.music.play(0, 0, 1000) # Loops, start, fade_ms
 
                 # If the time is midnight (if stored weekday info doesn't match current weekday info), restart the script to gather new playlist info
                 if savedweekday != datetime.today().weekday() and overrideplaylist == "":
                     speaktext("We're ready for a new playlist. Coming up in a sec!")
                     if radiomusiccount > 0:
-                        newwaitingsoundtwo.fadeout(1000)
+                        mixer.music.fadeout(1000)
+                        mixer.music.unload()
                     os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
                 
                 # Compared the savedtime VAR to the current time text. If mismatch, restart the station with a new playlist
@@ -1112,7 +1125,7 @@ class RadioHost:
                 # If mismatch, restart the station
                 if savedtimecomparison != savedtime and overrideplaylist == "":
                     speaktext("We're ready for a new playlist. Coming up in a sec!")
-                    waitingsound.stop()
+                    waitingsound.music.stop()
                     os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
 
                 # Play the synthesized speech
@@ -1120,7 +1133,8 @@ class RadioHost:
 
                 # Stop the waiting sound, fading out for 1 second
                 if radiomusiccount > 0:
-                    newwaitingsoundtwo.fadeout(1000)
+                    mixer.music.fadeout(1000)
+                    mixer.music.unload()
 
                 # Play the PSA if triggered
                 if playpsa == True:
@@ -1129,7 +1143,11 @@ class RadioHost:
                     # Play the PSA, if the video isn't available, repeat the process until one is
                     while True:
                         try:
-                            playlistitem = str(psaplaylist[random.randint(1,len(psaplaylist)-1)])
+                            if len(psaplaylist) <= 0:
+                                itemselection = 0
+                            else:
+                                itemselection = len(psaplaylist) -1
+                            playlistitem = str(psaplaylist[random.randint(1,itemselection)])
                             if not os.path.exists(str(str(maindirectory) + "/DownloadedPSAs" + str(customlocation) + "/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=","")) and not offlinemode:
                                 # Download the next song as a OGG file with YouTube-DL
                                 ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedPSAs" + str(customlocation) + "/%(id)s.%(ext)s", "ignoreerrors": True, "format": "bestaudio[ext=m4a]", "geobypass": True, "source_address": "0.0.0.0", "noplaylist": True, "download_archive": str(maindirectory) + "/PSAArchive" + str(customlocation) + ".txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
@@ -1149,14 +1167,19 @@ class RadioHost:
                                     gc.collect() # Free memory
 
                             # Play the downloaded song with pygame mixer
-                            psa = mixer.Sound(str(str(maindirectory) + "/DownloadedPSAs" + str(customlocation) + "/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""))
-                            psa.set_volume(0.7)
-                            mixer.Channel(6).play(psa, fade_ms=1000)
-                            waittime = psa.get_length()*1000
+                            # psa = mixer.Sound(str(str(maindirectory) + "/DownloadedPSAs" + str(customlocation) + "/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""))
+                            psa = mixer.music.load(str(str(maindirectory) + "/DownloadedPSAs" + str(customlocation) + "/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""))
+                            mixer.music.set_volume(0.7)
+                            # mixer.Channel(6).play(psa, fade_ms=1000)
+                            mixer.music.play(0, 0, 1000) # Loops, start, fade_ms
                             # pygame.time.wait(waittime)
                             # Show operator that song is playing in stdout
                             drawUI("[INFO] " + "Currently playing PSA.")
-                            time.sleep(waittime/1000)
+                            busycheck = True
+                            while (busycheck):
+                                time.sleep(1)
+                                if not mixer.music.get_busy():
+                                    busycheck = False
 
                             pass
                             break # Break out of statement
