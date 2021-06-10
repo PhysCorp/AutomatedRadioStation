@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-VERSION_INFO = "21.4.1" # Script version number [YEAR.MONTH.BUILDNUM]
+VERSION_INFO = "21.6.0" # Script version number [YEAR.MONTH.BUILDNUM]
 
 """
 CURRENT KNOWN ISSUE(S):
@@ -30,10 +30,18 @@ CURRENT KNOWN ISSUE(S):
 """
 
 """
+NEW FEATURE(S):
++ Predownload option now enforced on. Intelligently downloads songs if they are not already locally stored
++ Song and PSA playlists are now cached locally.
++ Offline mode! The station can now be configured to run entirely offline.
++ Minor tweaks to Pygame mixer performance.
++ Tweaks to default speech scripts, sounding slightly more natural.
++ Bug fixes.
+"""
+
+"""
 UPCOMING FEATURE(S):
-+ Console-based dashboard instead of huge log
-+ First-Run detection with announcer telling you how to setup this software
-+ Better-looking HTML with multiple pages and graphs
++ Radio waiting music will be based off of current playlist, not entire library.
 """
 
 # Import classes

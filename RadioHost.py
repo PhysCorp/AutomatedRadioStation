@@ -109,7 +109,7 @@ class RadioHost:
             dummyvalue = input("Press enter to continue.")
         except (EOFError):
             pass
-        speak("Now, we're almost done. We'll take a look at the most important file, \"Options.json.\" This file contains all of the program's options. Upon opening the file in your text editor, you'll see a range of different preferences, such as suggestions and max song length. Please edit the values accordingly. I'll describe each option here first. Playintro states whether you want to have the program give its long introduction before starting song playback. Suggestions states whether you want users to visit the associated website and suggest YouTube links to songs to be played live. Normalize audio serves to make all songs the same perceived volume. This function currently causes a memory leak, but greatly improves the quality of the radio. The port option allows you to specify which port the web server will run on. Dashboard serves to beautify the terminal output when monitoring the station. Offline mode serves to limit the number of YouTube and API calls that the program makes. Max song length sets the maximum allowable length that a song can play for. This helps to prevent pesky 24 hour loop songs from taking up the radio. The next few options describe modifying the wavenet voice, if you provided an API key earlier. Wavenet can be toggled here. Wavenet pitch modifies the voice pitch, while Wavenet speed modifies the speed accordingly. Next, wavenet voice allows you to choose the specific voice profile to use, while wavenet backup voice allows you to choose a second, lower cost, voice to use in radio downtime. That's it for wavenet options. Next, predownload is a very useful option that should be enabled when running the radio for the first time, but isn't required. This option downloads an entire YouTube playlist to your hard drive ahead of time, greatly reducing the latency between playing songs. After that, waitforuser allows this program to wait until you press enter before starting the radio. The next few options control how often a radio event occurs. For each of the following items, you can assign an arbitrary number. The higher the value, the less likely an item will play. Default PSA Chance refers to how often a public service announcement plays. Default Weather Chance refers to how often a weather report will be given. Default Welcome Chance refers to how often the radio intro will replay. Default Weekday Chance refers to how often the current playlist title will be mentioned. Finally, Default Time Chance refers to how often the current time will be mentioned. We're nearly done! Only a few more options. Next, scrolling limit is a useful option to force the web scraping engine to scroll down and gather more videos in a playlist. Set the number according to approximately how many times you need to scroll down in a playlist to see every thumbnail. For example, if there's 400 videos in a playlist on average, set this option to 4. Next, city name refers to the city name for OpenWeatherMap weather info. After that, override playlist allows you to set one single playlist to play all the time on the radio. Writeoutput and Write song info are deprecated options to write the current announcer voice lines and song info to a text file for use in programs like OBS Studio if livestreaming. Finally, PSA playlist URL allows you to set a YouTube playlist full of public service announcements to play on the air. Once you have a chance to modify each value to your liking, press enter to continue.")
+        speak("Now, we're almost done. We'll take a look at the most important file, \"Options.json.\" This file contains all of the program's options. Upon opening the file in your text editor, you'll see a range of different preferences, such as suggestions and max song length. Please edit the values accordingly. I'll describe each option here first. Playintro states whether you want to have the program give its long introduction before starting song playback. Suggestions states whether you want users to visit the associated website and suggest YouTube links to songs to be played live. Normalize audio serves to make all songs the same perceived volume. This function currently causes a memory leak, but greatly improves the quality of the radio. The port option allows you to specify which port the web server will run on. Dashboard serves to beautify the terminal output when monitoring the station. Offline mode serves to limit the number of YouTube and API calls that the program makes. Max song length sets the maximum allowable length that a song can play for. This helps to prevent pesky 24 hour loop songs from taking up the radio. The next few options describe modifying the wavenet voice, if you provided an API key earlier. Wavenet can be toggled here. Wavenet pitch modifies the voice pitch, while Wavenet speed modifies the speed accordingly. Next, wavenet voice allows you to choose the specific voice profile to use, while wavenet backup voice allows you to choose a second, lower cost, voice to use in radio downtime. That's it for wavenet options. After that, waitforuser allows this program to wait until you press enter before starting the radio. The next few options control how often a radio event occurs. For each of the following items, you can assign an arbitrary number. The higher the value, the less likely an item will play. Default PSA Chance refers to how often a public service announcement plays. Default Weather Chance refers to how often a weather report will be given. Default Welcome Chance refers to how often the radio intro will replay. Default Weekday Chance refers to how often the current playlist title will be mentioned. Finally, Default Time Chance refers to how often the current time will be mentioned. We're nearly done! Only a few more options. Next, scrolling limit is a useful option to force the web scraping engine to scroll down and gather more videos in a playlist. Set the number according to approximately how many times you need to scroll down in a playlist to see every thumbnail. For example, if there's 400 videos in a playlist on average, set this option to 4. Next, city name refers to the city name for OpenWeatherMap weather info. After that, override playlist allows you to set one single playlist to play all the time on the radio. Writeoutput and Write song info are deprecated options to write the current announcer voice lines and song info to a text file for use in programs like OBS Studio if livestreaming. Finally, PSA playlist URL allows you to set a YouTube playlist full of public service announcements to play on the air. Once you have a chance to modify each value to your liking, press enter to continue.")
         try:
             dummyvalue = input("Press enter to continue.")
         except (EOFError):
@@ -143,8 +143,10 @@ class RadioHost:
 
         # Init audio engine with 10 channels
         mixer = pygame.mixer
+        mixer.pre_init(44100, -16, 2, 64)
         mixer.init()
-        mixer.set_num_channels(10)
+        mixer.set_num_channels(8)
+        pygame.init()
 
         # Determine main program directory
         maindirectory = os.path.dirname(os.path.abspath(__file__)) # The absolute path to this file
@@ -168,7 +170,6 @@ class RadioHost:
             wavenetvoice = options_dict["wavenet_voice"] # (String) wavenet voice profile [EX: "en-US-Wavenet-I"]
             wavenetbackupvoice = options_dict["wavenet_backup_voice"] # (String) wavenet backup voice profile [EX: "en-US-Standard-I"]
             waitforuser = options_dict["waitforuser"] # Bool for whether or not to wait for user input before starting radio
-            predownload = options_dict["predownload"] # Bool for whether or not to download the entire music playlist ahead of time
             defaultpsachance = options_dict["defaultpsachance"] # Likelihood of playing a PSA [1/[x] chance]
             defaultweatherchance = options_dict["defaultweatherchance"] # Likelihood of mentioning the weather [1/[x] chance]
             defaultwelcomechance = options_dict["defaultwelcomechance"] # Likelihood of mentioning the welcome message again [1/[x] chance]
@@ -270,7 +271,7 @@ class RadioHost:
             for item in radiosound_dict:
                 if item.upper().count(".WAV") == 0 and item.upper().count(".OGG") == 0:
                     radiosound_dict.remove(item)
-            radiosoundcount = len(radiosound_dict)
+            radiosoundcount = len(radiosound_dict) - 1
             if radiosoundcount < 0:
                 radiosoundcount = 0
         except FileNotFoundError:
@@ -284,7 +285,7 @@ class RadioHost:
             for item in radiomusic_dict:
                 if item.upper().count(".WAV") == 0 and item.upper().count(".OGG") == 0:
                     radiomusic_dict.remove(item)
-            radiomusiccount = len(radiomusic_dict)
+            radiomusiccount = len(radiomusic_dict) - 1
             if radiomusiccount < 0:
                 radiomusiccount = 0
         except FileNotFoundError:
@@ -296,9 +297,9 @@ class RadioHost:
             data = {}
             data["Statistics"] = []
             if not songsuggestion:
-                data["Statistics"].append({"PlaylistURL": str(playlisturl), "SongsPlayedNum": len(listPlayedSongs),"SongTitle": str(playlistnames[songselectionint]),"EmbedLink": videoID.replace("https://www.youtube.com/watch?v=","https://www.youtube.com/embed/"),"SongLink": videoID, "WeatherDecimal": round((1/weatherchance)*100), "PSADecimal": round((1/psachance)*100), "WelcomeDecimal": round((1/welcomechance)*100), "WeekdayDecimal": round((1/weekdaychance)*100), "TimeDecimal": round((1/timechance)*100)})
+                data["Statistics"].append({"PlaylistURL": str(musicplaylist), "SongsPlayedNum": len(listPlayedSongs),"SongTitle": str(playlistnames[songselectionint]),"EmbedLink": videoID.replace("https://www.youtube.com/watch?v=","https://www.youtube.com/embed/"),"SongLink": videoID, "WeatherDecimal": round((1/weatherchance)*100), "PSADecimal": round((1/psachance)*100), "WelcomeDecimal": round((1/welcomechance)*100), "WeekdayDecimal": round((1/weekdaychance)*100), "TimeDecimal": round((1/timechance)*100)})
             else:
-                data["Statistics"].append({"PlaylistURL": str(playlisturl), "SongsPlayedNum": len(listPlayedSongs),"SongTitle": "Audience Suggestion","EmbedLink": videoID.replace("https://www.youtube.com/watch?v=","https://www.youtube.com/embed/").replace("https://youtu.be/","https://www.youtube.com/embed/"),"SongLink": videoID, "WeatherDecimal": round((1/weatherchance)*100), "PSADecimal": round((1/psachance)*100), "WelcomeDecimal": round((1/welcomechance)*100), "WeekdayDecimal": round((1/weekdaychance)*100), "TimeDecimal": round((1/timechance)*100)})
+                data["Statistics"].append({"PlaylistURL": str(musicplaylist), "SongsPlayedNum": len(listPlayedSongs),"SongTitle": "Audience Suggestion","EmbedLink": videoID.replace("https://www.youtube.com/watch?v=","https://www.youtube.com/embed/").replace("https://youtu.be/","https://www.youtube.com/embed/"),"SongLink": videoID, "WeatherDecimal": round((1/weatherchance)*100), "PSADecimal": round((1/psachance)*100), "WelcomeDecimal": round((1/welcomechance)*100), "WeekdayDecimal": round((1/weekdaychance)*100), "TimeDecimal": round((1/timechance)*100)})
             with open(str(maindirectory) + "/VariableDump" + str(customlocation) + ".json", "w") as jsonfile:
                 json.dump(data, jsonfile)
 
@@ -381,13 +382,14 @@ class RadioHost:
                     os.system("espeak \"" + str(message).replace("'","").replace("\"","") + "\"")
 
         # Tell user that the program is starting
-        speaktext("The radio will be back online in a moment!")
+        speaktext("We'll be right back!")
 
         # Start a random radio "waiting" song
         if radiomusiccount > 0:
             waitingsound = mixer.Sound(str(maindirectory) + "/DownloadedSongs" + str(customlocation) + "/" + str(radiomusic_dict[random.randint(0,radiomusiccount)]))
             waitingsound.set_volume(0.4)
-            mixer.Channel(1).play(waitingsound, fade_ms=1000, loops=999)
+            if not offlinemode: # If offline, no need to wait
+                mixer.Channel(1).play(waitingsound, fade_ms=1000, loops=999)
 
         # State any errors/warnings to user
         if weatherkey == "":
@@ -430,60 +432,109 @@ class RadioHost:
             url = overrideplaylist
             drawUI("[INFO] " + "Override enabled for playlist. Using " + str(url) + ".")
 
-        # Print steps to stdout
-        drawUI("[INFO] " + "Scraping music playlist ...")
-
-        # Set Firefox to run in headless mode
-        opts = FirefoxOptions()
-        opts.add_argument("--headless")
-        driver = webdriver.Firefox(options=opts)
-
-        # Open playlist URL in headless Firefox
-        driver.get(url)
-        playlisturl = url
-
-        # Declare lists for playlist video URLs and titles
+        # Declare lists for playlist video URLs, titles, and video IDs
         playlist=[]
         playlistnames=[]
-        countervar = 1 # Used to display how many videos have been gathered
+        playlistIDs=[]
 
-        # Continue to scroll down the playlist until most of playlist is in view
-        scrollcounter = 0
-        while scrollcounter < scrollinglimit:
-            scrolldriver = driver.find_element_by_tag_name("html")
-            scrolldriver.send_keys(Keys.END)
-            time.sleep(2)
-            scrollcounter += 1
-            drawUI(f"[INFO] (Index {scrollcounter}) Scrolling to next page in playlist.")
+        # If offline mode isn't set, do the following
+        if not offlinemode:
+            # Print steps to stdout
+            drawUI("[INFO] " + "Downloading latest music playlist information from YouTube ...")
 
-        videos=driver.find_elements_by_class_name('style-scope ytd-playlist-video-renderer')
+            # Set Firefox to run in headless mode
+            opts = FirefoxOptions()
+            opts.add_argument("--headless")
+            driver = webdriver.Firefox(options=opts)
 
-        # Scrape each video into two lists, video URLs and video titles respectively
-        for video in videos:
-            link=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("href")
-            longname=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("title")
-            end=longname.find("(")
-            if end == -1 and end != 0:
-                longname_concat = longname
-            else:
-                longname_concat = longname[:end]
-            
-            end=longname_concat.find("[")
-            if end == -1 and end != 0:
-                name = longname_concat
-            else:
-                name = longname_concat[:end]
-            if name != "": # If title exists, add name and link to the lists
-                drawUI(f"[INFO] (Video Index {str(countervar)}) Retrieved info for \"{name}\"")
-                playlist.append(link)
-                playlistnames.append(name)
-                countervar += 1
+            # Open playlist URL in headless Firefox
+            driver.get(url)
+            playlisturl = url
 
-        musicplaylist=vidstrip(playlist) # Strip unneccessary chars from list
-        driver.close() # Close the web rendering engine
+            countervar = 1 # Used to display how many videos have been gathered
 
-        # Print message to stdout
-        drawUI("[INFO] " + "Finished downloading info from music playlist.")
+            # Continue to scroll down the playlist until most of playlist is in view
+            scrollcounter = 0
+            while scrollcounter < scrollinglimit:
+                scrolldriver = driver.find_element_by_tag_name("html")
+                scrolldriver.send_keys(Keys.END)
+                time.sleep(2)
+                scrollcounter += 1
+                drawUI(f"[INFO] (Index {scrollcounter}) Scrolling to next page in playlist.")
+
+            videos=driver.find_elements_by_class_name('style-scope ytd-playlist-video-renderer')
+
+            # Scrape each video into two lists, video URLs and video titles respectively
+            for video in videos:
+                link=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("href")
+                longname=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("title")
+                end=longname.find("(")
+                if end == -1 and end != 0:
+                    longname_concat = longname
+                else:
+                    longname_concat = longname[:end]
+                
+                end=longname_concat.find("[")
+                if end == -1 and end != 0:
+                    name = longname_concat
+                else:
+                    name = longname_concat[:end]
+                if name != "": # If title exists, add name and link to the lists
+                    drawUI(f"[INFO] (Video Index {str(countervar)}) Retrieved info for \"{name}\"")
+                    playlist.append(link)
+                    playlistnames.append(name)
+                    countervar += 1
+
+            musicplaylist=vidstrip(playlist) # Strip unneccessary chars from list
+            driver.close() # Close the web rendering engine
+
+            # Clone URL list and remove everything except YouTube video IDs
+            for item in playlist:
+                playlistIDs.append(item.replace("https://www.youtube.com/watch?v=",""))
+
+            # Print message to stdout
+            drawUI("[INFO] " + "Finished downloading info from music playlist.")
+
+            # Save Playlist URLs to Disk
+            filePlaylist = open(str(maindirectory) + "/Cache-" + str(url.replace("https://www.youtube.com/playlist?list=","")) + "_URL.txt", "w")
+            for item in musicplaylist:
+                filePlaylist.write(item + "\n")
+            filePlaylist.close()
+
+            # Save Playlist Names to Disk
+            filePlaylist = open(str(maindirectory) + "/Cache-" + str(url.replace("https://www.youtube.com/playlist?list=","")) + "_NAME.txt", "w")
+            for item in playlistnames:
+                filePlaylist.write(item + "\n")
+            filePlaylist.close()
+
+        else: # If offline, gather list from disk
+            # Open current playlist URLs
+            try:
+                filePlaylist = open(str(maindirectory) + "/Cache-" + str(url.replace("https://www.youtube.com/playlist?list=","")) + "_URL.txt", "r")
+                musicplaylist = filePlaylist.readlines()
+                filePlaylist.close()
+                iteration = 0
+                while iteration < len(musicplaylist):
+                    musicplaylist[iteration] = musicplaylist[iteration].replace("\n","")
+                    iteration += 1
+            except FileNotFoundError:
+                speaktext("You are offline and I cannot find the playlist file on the disk. Please go online and try again.")
+                quit()
+            # Open current playlist names
+            try:
+                filePlaylist = open(str(maindirectory) + "/Cache-" + str(url.replace("https://www.youtube.com/playlist?list=","")) + "_NAME.txt", "r")
+                playlistnames = filePlaylist.readlines()
+                filePlaylist.close()
+                iteration = 0
+                while iteration < len(playlistnames):
+                    playlistnames[iteration] = playlistnames[iteration].replace("\n","")
+                    iteration += 1
+            except FileNotFoundError:
+                speaktext("You are offline and I cannot find the playlist file on the disk. Please go online and try again.")
+                quit()
+            # Clone URL list and remove everything except YouTube video IDs
+            for item in musicplaylist:
+                playlistIDs.append(item.replace("https://www.youtube.com/watch?v=",""))
 
         # Open SongArchive file to avoid excessive YouTube-DL calls
         try:
@@ -494,15 +545,21 @@ class RadioHost:
             songarchive = []
             pass
 
-        # If predownload is enabled, download entire music library ahead of time
-        if predownload and not offlinemode:
+        # If online and new files exist in playlist, save entire playlist to disk
+        match = True # Set var to check if there's a new song
+        for item in playlistIDs:
+            checkitem = "youtube " + str(item) + "\n"
+            if checkitem not in songarchive:
+                match = False
+
+        if match == False and not offlinemode:
             drawUI("[INFO] " + "Saving music playlist to disk ...")
-            speaktext("Please enjoy this song while I finish preparing a playlist for you. This will take a while.")
+            speaktext("We have a few new songs here. We'll be back after I add them to the mix.")
             ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedSongs" + str(customlocation) + "/%(id)s.%(ext)s", "ignoreerrors": True, "format": "bestaudio[ext=m4a]", "geobypass": True, "noplaylist": True, "source_address": "0.0.0.0", "download_archive": str(maindirectory) + "/SongArchive" + str(customlocation) + ".txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 videocounter = 0
                 videolist = []
-                while videocounter <= len(musicplaylist):
+                while videocounter < len(musicplaylist):
                     videolist.clear()
                     videolist.append(str(musicplaylist[videocounter]))
                     checkstring = "youtube " + str(musicplaylist[videocounter]).replace("https://www.youtube.com/watch?v=","") + "\n"
@@ -518,67 +575,143 @@ class RadioHost:
                                 del beforesound
                                 del aftersound
                                 gc.collect() # Free memory
-                            drawUI(f"[INFO] Downloaded ({videocounter + 1}/{len(musicplaylist)}) Normalizing audio ...")
+                            drawUI(f"[INFO] Downloaded ({videocounter + 1}/{len(musicplaylist)}).")
                         except FileNotFoundError:
                             drawUI(f"[INFO] Failed to download ({videocounter + 1}/{len(musicplaylist)}).")
                             pass
                     videocounter += 1
 
-        # Next, scrape the PSA playlist (if playlist URL is specified)
-        if psaplaylisturl != "":
-            # Set URL for PSAs instead of music
-            url = psaplaylisturl
+        # Open PSAArchive file to avoid excessive YouTube-DL calls
+        try:
+            filePSAArchive = open(str(maindirectory) + "/PSAArchive" + str(customlocation) + ".txt", "r")
+            PSAArchive = filePSAArchive.readlines()
+            filePSAArchive.close()
+        except FileNotFoundError:
+            PSAArchive = []
+            pass
 
-            # Print steps to stdout
-            drawUI("[INFO] " + "Scraping PSA playlist ...")
+        # Declare appropriate "playlist" lists
+        playlist=[] # Clear "playlist" list
+        playlistnamesPSA=[]
+        playlistIDsPSA=[]
 
-            # Run Firefox in automated headless mode
-            opts = FirefoxOptions()
-            opts.add_argument("--headless")
-            driver = webdriver.Firefox(options=opts)
-            driver.get(url) # Open URL
-            playlist=[] # Clear "playlist" list
-            playlistnamesPSA=[]
-            countervar = 1 # Used to display how many videos have been gathered
+        # If offline mode isn't set, scrape the PSA playlist (if playlist URL is specified)
+        if not offlinemode:
+            if psaplaylisturl != "":
+                # Set URL for PSAs instead of music
+                url = psaplaylisturl
 
-            # Continue to scroll down the playlist until most of playlist is in view
-            scrollcounter = 0
-            while scrollcounter < scrollinglimit:
-                scrolldriver = driver.find_element_by_tag_name("html")
-                scrolldriver.send_keys(Keys.END)
-                time.sleep(2)
-                scrollcounter += 1
-                drawUI(f"[INFO] (Index {scrollcounter}) Scrolling to next page in playlist.")
+                # Print steps to stdout
+                drawUI("[INFO] " + "Downloading latest PSA playlist information from YouTube ...")
 
-            videos=driver.find_elements_by_class_name('style-scope ytd-playlist-video-renderer')
-            for video in videos:
-                link2=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("href")
-                longname2=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("title")
-                end=longname2.find("(")
-                if end == -1 and end != 0:
-                    longname_concat = longname2
-                else:
-                    longname_concat = longname2[:end]
+                # Run Firefox in automated headless mode
+                opts = FirefoxOptions()
+                opts.add_argument("--headless")
+                driver = webdriver.Firefox(options=opts)
+                driver.get(url) # Open URL
+                countervar = 1 # Used to display how many videos have been gathered
+
+                # Continue to scroll down the playlist until most of playlist is in view
+                scrollcounter = 0
+                while scrollcounter < scrollinglimit:
+                    scrolldriver = driver.find_element_by_tag_name("html")
+                    scrolldriver.send_keys(Keys.END)
+                    time.sleep(2)
+                    scrollcounter += 1
+                    drawUI(f"[INFO] (Index {scrollcounter}) Scrolling to next page in playlist.")
+
+                videos=driver.find_elements_by_class_name('style-scope ytd-playlist-video-renderer')
+                for video in videos:
+                    link2=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("href")
+                    longname2=video.find_element_by_xpath('.//*[@id="video-title"]').get_attribute("title")
+                    end=longname2.find("(")
+                    if end == -1 and end != 0:
+                        longname_concat = longname2
+                    else:
+                        longname_concat = longname2[:end]
+                    
+                    end=longname_concat.find("[")
+                    if end == -1 and end != 0:
+                        name = longname_concat
+                    else:
+                        name = longname_concat[:end]
+                    if name != "": # If title exists, add name and link to the lists
+                        playlist.append(link2) # Append each URL to the list
+                        playlistnamesPSA.append(longname2)
+                        drawUI(f"[INFO] (Video Index {str(countervar)}) Retrieved info for \"{longname2}\"")
+                        countervar += 1
+
+                psaplaylist=vidstrip(playlist)
+                driver.close() # Close the web rendering engine
+
+                # Clone URL list and remove everything except YouTube video IDs
+                for item in playlist:
+                    playlistIDsPSA.append(item.replace("https://www.youtube.com/watch?v=",""))
                 
-                end=longname_concat.find("[")
-                if end == -1 and end != 0:
-                    name = longname_concat
-                else:
-                    name = longname_concat[:end]
-                if name != "": # If title exists, add name and link to the lists
-                    playlist.append(link2) # Append each URL to the list
-                    playlistnamesPSA.append(longname2)
-                    drawUI(f"[INFO] (Video Index {str(countervar)}) Retrieved info for \"{longname2}\"")
-                    countervar += 1
+                # Save Playlist URLs to Disk
+                filePlaylist = open(str(maindirectory) + "/Cache-" + str(psaplaylisturl.replace("https://www.youtube.com/playlist?list=","")) + "_URL.txt", "w")
+                for item in psaplaylist:
+                    filePlaylist.write(item + "\n")
+                filePlaylist.close()
+            else:
+                # Print missing playlist info message to stdout
+                drawUI("[INFO] " + "PSA playlist URL has not been set. The station will not play PSAs.")
+        
+        if offlinemode and psaplaylisturl != "": # If offline, gather list from disk
+            # Open current playlist URLs
+            try:
+                filePlaylist = open(str(maindirectory) + "/Cache-" + str(psaplaylisturl.replace("https://www.youtube.com/playlist?list=","")) + "_URL.txt", "r")
+                psaplaylist = filePlaylist.readlines()
+                filePlaylist.close()
+                iteration = 0
+                while iteration < len(psaplaylist):
+                    psaplaylist[iteration] = psaplaylist[iteration].replace("\n","")
+                    iteration += 1
+            except FileNotFoundError:
+                speaktext("You are offline and I cannot find the playlist file on the disk. Please go online and try again.")
+                quit()
+            # Clone URL list and remove everything except YouTube video IDs
+            for item in psaplaylist:
+                playlistIDs.append(item.replace("https://www.youtube.com/watch?v=",""))
 
-            psaplaylist=vidstrip(playlist)
-            driver.close() # Close the web rendering engine
-        else:
-            # Print missing playlist info message to stdout
-            drawUI("[INFO] " + "PSA playlist URL has not been set. The station will not play PSAs.")
+        # If online and new files exist in playlist, save entire playlist to disk
+        match = True # Set var to check if there's a new song
+        for item in playlistIDsPSA:
+            checkitem = "youtube " + str(item) + "\n"
+            if checkitem not in PSAArchive:
+                match = False
 
-        # Print completion message to stdout
-        drawUI("[INFO] " + "Finished downloading info from PSA playlist. Starting radio ...")
+        if match == False and not offlinemode:
+            drawUI("[INFO] " + "Saving PSA playlist to disk ...")
+            speaktext("Almost there, we have a few PSAs to add to the show.")
+            ydl_opts = {"outtmpl": str(maindirectory) + "/DownloadedPSAs" + str(customlocation) + "/%(id)s.%(ext)s", "ignoreerrors": True, "format": "bestaudio[ext=m4a]", "geobypass": True, "noplaylist": True, "source_address": "0.0.0.0", "download_archive": str(maindirectory) + "/PSAArchive" + str(customlocation) + ".txt", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis"}]}
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                videocounter = 0
+                videolist = []
+                while videocounter < len(psaplaylist):
+                    videolist.clear()
+                    videolist.append(str(psaplaylist[videocounter]))
+                    checkstring = "youtube " + str(psaplaylist[videocounter]).replace("https://www.youtube.com/watch?v=","") + "\n"
+                    if checkstring not in PSAArchive:
+                        ydl.download(videolist)
+                        try:
+                            if normalize_bool:
+                                beforesound = AudioSegment.from_file(str(str(maindirectory) + "/DownloadedPSAs" + str(customlocation) + "/" + str(psaplaylist[videocounter]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), "ogg")  
+                                aftersound = effects.normalize(beforesound)  
+                                aftersound.export(str(str(maindirectory) + "/DownloadedPSAs" + str(customlocation) + "/" + str(psaplaylist[videocounter]) + ".ogg").replace("https://www.youtube.com/watch?v=",""), format="ogg", tags={"title": "AutomatedRadioStation"})
+                                beforesound.close()
+                                aftersound.close()
+                                del beforesound
+                                del aftersound
+                                gc.collect() # Free memory
+                            drawUI(f"[INFO] Downloaded ({videocounter + 1}/{len(psaplaylist)}).")
+                        except FileNotFoundError:
+                            drawUI(f"[INFO] Failed to download ({videocounter + 1}/{len(psaplaylist)}).")
+                            pass
+                    videocounter += 1
+
+            # Print completion message to stdout
+            drawUI("[INFO] " + "Finished downloading info from PSA playlist. Starting radio ...")
 
         # Read and store each external speech script into memory
         # (Each line in the textfile represents a different index in the list)
@@ -670,7 +803,7 @@ class RadioHost:
                     if radiomusiccount > 0:
                         newwaitingsound = mixer.Sound(str(maindirectory) + "/DownloadedSongs" + str(customlocation) + "/" + str(radiomusic_dict[random.randint(0,radiomusiccount)]))
                         newwaitingsound.set_volume(0.1)
-                        mixer.Channel(1).play(newwaitingsound, fade_ms=1000)
+                        mixer.Channel(3).play(newwaitingsound, fade_ms=1000)
 
                     # Play the synthesized voice
                     speaktext(longspeechstring)
@@ -705,9 +838,9 @@ class RadioHost:
                     longspeechstring += " " + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
                     # longspeechstring += " " + str(speechSongTransitions[random.randint(0,len(speechSongTransitions)-1)]) + str(playlistnames[songselectionint]) + "."
                     
-                    # Chance to speak "Stay safe out there!"
+                    # Chance to speak "Stay safe!"
                     if random.randint(0,4) == 1:
-                        longspeechstring += " Stay safe out there!"
+                        longspeechstring += " Stay safe!"
                     
                     # Use system TTS engine to speak the next song info
                     speaktext(longspeechstring, earlyfade=True)
@@ -804,7 +937,7 @@ class RadioHost:
                 try:
                     music = mixer.Sound(str(str(maindirectory) + "/DownloadedSongs" + str(customlocation) + "/" + videoID + ".ogg").replace("https://www.youtube.com/watch?v=",""))
                     music.set_volume(0.7)
-                    mixer.Channel(1).play(music, fade_ms=5000)
+                    mixer.Channel(4).play(music, fade_ms=5000)
                     waittime = (music.get_length()*1000) - 5000
                     if waittime < 0:
                         waittime = music.get_length()*1000
@@ -929,9 +1062,9 @@ class RadioHost:
                     # Reset psachance var
                     psachance = defaultpsachance
 
-                # Chance to include "Stay safe out there!" in speech
+                # Chance to include "Stay safe!" in speech
                 if random.randint(0,4) == 1:
-                    longspeechstring += " Stay safe out there!"
+                    longspeechstring += " Stay safe!"
 
                 # Play random radio sound before speaking if file exists
                 if radiosoundcount >= 1:
@@ -948,11 +1081,11 @@ class RadioHost:
                 if radiomusiccount > 0:
                     newwaitingsoundtwo = mixer.Sound(str(maindirectory) + "/DownloadedSongs" + str(customlocation) + "/" + str(radiomusic_dict[random.randint(0,radiomusiccount)]))
                     newwaitingsoundtwo.set_volume(0.1)
-                    mixer.Channel(1).play(newwaitingsoundtwo, fade_ms=1000)
+                    mixer.Channel(5).play(newwaitingsoundtwo, fade_ms=1000)
 
                 # If the time is midnight (if stored weekday info doesn't match current weekday info), restart the script to gather new playlist info
-                if savedweekday != datetime.today().weekday():
-                    speaktext("It's midnight. I'm switching to a new playlist. Please wait.")
+                if savedweekday != datetime.today().weekday() and overrideplaylist == "":
+                    speaktext("We're ready for a new playlist. Coming up in a sec!")
                     if radiomusiccount > 0:
                         newwaitingsoundtwo.fadeout(1000)
                     os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
@@ -977,8 +1110,8 @@ class RadioHost:
                     savedtimecomparison = "Late Night"
                 
                 # If mismatch, restart the station
-                if savedtimecomparison != savedtime:
-                    speaktext("I'm switching to a new playlist. Please wait.")
+                if savedtimecomparison != savedtime and overrideplaylist == "":
+                    speaktext("We're ready for a new playlist. Coming up in a sec!")
                     waitingsound.stop()
                     os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
 
@@ -1018,7 +1151,7 @@ class RadioHost:
                             # Play the downloaded song with pygame mixer
                             psa = mixer.Sound(str(str(maindirectory) + "/DownloadedPSAs" + str(customlocation) + "/" + playlistitem + ".ogg").replace("https://www.youtube.com/watch?v=",""))
                             psa.set_volume(0.7)
-                            mixer.Channel(1).play(psa, fade_ms=1000)
+                            mixer.Channel(6).play(psa, fade_ms=1000)
                             waittime = psa.get_length()*1000
                             # pygame.time.wait(waittime)
                             # Show operator that song is playing in stdout
@@ -1045,6 +1178,6 @@ class RadioHost:
                     time.sleep(waittime/1000)
             except (RuntimeError, TypeError, NameError, OSError, KeyError, IndexError, LookupError):
                 # Say that something has gone wrong
-                speaktext("Something has gone wrong. Please wait while I restart the station.")
+                speaktext("Something has gone wrong. Please wait while we restart the station.")
                 os.execv(sys.executable, ['python3'] + sys.argv) # Restart the script by issuing a terminal command
                 # os.execv(sys.executable, ['python3'] + sys.argv + ["skipintro"]) # Restart the script by issuing a terminal command, skipping the intro
