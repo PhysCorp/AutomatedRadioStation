@@ -19,7 +19,7 @@ Additionally, users can view the current song and playlist info, as well as sugg
 
 # Requirements:
 This program requires that you have the following installed, as well as all the dependencies listed in requirements.txt:
-Terminal >> sudo apt install firefox espeak python3-venv firefox-geckodriver ffmpeg mbrola mbrola-us2 mbrola-us3 youtube-dl
+Terminal >> sudo apt install firefox espeak python3-venv firefox-geckodriver ffmpeg mbrola mbrola-us2 mbrola-us3
 
 # Install Instructions:
 This should be used on a Debian-based Linux distro! I haven't tested other Linux distros, as well as Windows and Mac OS! Expect *many* errors.
