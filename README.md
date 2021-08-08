@@ -4,7 +4,7 @@
 A Radio Host that's Entirely Automated!
 
 # Listen Now [LIVE] (Explicit):
-http://listen.physcorp.com/Radio.mp3
+https://listen.physcorp.com/Radio.mp3
 
 # Suggest Songs (Experimental):
 http://radio.physcorp.com
