@@ -4,10 +4,10 @@
 A Radio Host that's Entirely Automated!
 
 # Listen Now [LIVE] (Explicit):
-https://listen.physcorp.com/Radio.mp3
+https://listen.physcorp.com/AutomatedRadio.mp3
 
 # Suggest Songs (Experimental):
-http://radio.physcorp.com
+https://radio.physcorp.com
 
 # What is it?
 [*This is a fun project for me to better understand Python!*]
